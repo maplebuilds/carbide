@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #1a1a1a;
-  --foreground: #ffffff;
+  --background: #0e0e10;
+  --foreground: #e8e8ec;
 }
 
 html {
@@ -14,7 +14,15 @@ body {
   overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+.font-data {
+  font-family: 'DM Mono', 'Courier New', monospace;
 }
 
 /* Ensure 16px minimum for inputs on mobile to prevent iOS zoom */

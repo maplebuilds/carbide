@@ -18,7 +18,7 @@ const tabs: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number 
 
 export default function NavTabs({ activeTab, onTabChange, theme }: NavTabsProps) {
   return (
-    <nav className={`border-b ${theme === 'dark' ? 'border-white/10 bg-[#1a1a1a]' : 'border-black/10 bg-[#F5F5F5]'}`}>
+    <nav className={`border-b ${theme === 'dark' ? 'border-white/10 bg-[#0e0e10]' : 'border-black/10 bg-[#F5F5F5]'}`}>
       <div className="max-w-4xl mx-auto px-4 flex">
         {tabs.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;

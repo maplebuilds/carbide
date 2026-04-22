@@ -29,10 +29,9 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
       {/* Hero text */}
       <div className="text-center mb-8">
         <h1
-          className={`text-3xl sm:text-5xl font-black uppercase tracking-tight mb-3 ${
+          className={`font-display text-4xl sm:text-6xl tracking-tight mb-3 ${
             theme === 'dark' ? 'text-white' : 'text-[#1a1a1a]'
           }`}
-          style={{ fontFamily: "'Arial Black', 'Impact', sans-serif" }}
         >
           Know Before You Drive Off
         </h1>

@@ -14,26 +14,23 @@ export interface VehicleData {
 }
 
 export interface CarReport {
-  vehicleSummary: {
-    overview: string;
-    specs: string;
-  };
+  // Phase 1 — numbers, loads fast
   purchasePriceContext: {
     fairMarketLow: string;
     fairMarketHigh: string;
-    analysis: string;
+    analysis?: string;
   };
   financingEstimate: {
     monthlyGoodCredit60: string;
     monthlyGoodCredit72: string;
     monthlyFairCredit60: string;
     monthlyFairCredit72: string;
-    analysis: string;
+    analysis?: string;
   };
   insuranceEstimate: {
     monthlyLow: string;
     monthlyHigh: string;
-    analysis: string;
+    analysis?: string;
   };
   fuelCosts: {
     mpgCity: string;
@@ -41,31 +38,37 @@ export interface CarReport {
     mpgCombined: string;
     monthlyCost: string;
     annualCost: string;
-    analysis: string;
+    analysis?: string;
   };
   maintenanceReliability: {
     annualCost: string;
+    reliabilityRating: string;
     knownIssues: string;
     majorRisks: string;
-    reliabilityRating: string;
   };
   depreciationResidualValue: {
     currentValue: string;
     value1Year: string;
     value3Year: string;
     value5Year: string;
-    analysis: string;
+    analysis?: string;
   };
   totalCostOfOwnership: {
     year1Total: string;
     year3Total: string;
-    breakdown: string;
+    breakdown?: string;
   };
   bottomLine: {
-    verdict: string;
-    watchOut: string;
-    askDealer: string;
     smartBuy: boolean;
+    verdict?: string;
+    watchOut?: string;
+    askDealer?: string;
+  };
+
+  // Phase 2 — prose, loads in background
+  vehicleSummary?: {
+    overview: string;
+    specs: string;
   };
 }
 

@@ -5,7 +5,7 @@ import VinInput from './VinInput';
 import LoadingReport from './LoadingReport';
 import CarReport from './CarReport';
 import { VehicleData, CarReport as CarReportType, HistoryItem } from '@/lib/types';
-import { saveToHistory } from '@/lib/storage';
+import { saveToHistory, updateHistoryReport } from '@/lib/storage';
 
 interface SearchTabProps {
   theme: 'dark' | 'light';
@@ -20,6 +20,7 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
   const [vehicle, setVehicle] = useState<VehicleData | null>(initialItem?.vehicleData ?? null);
   const [report, setReport] = useState<CarReportType | null>(initialItem?.report ?? null);
   const [error, setError] = useState<string>('');
+  const [proseLoading, setProseLoading] = useState(false);
 
   const handleVinSubmit = async (vin: string) => {
     setError('');
@@ -45,8 +46,9 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
       return;
     }
 
-    // Step 2: Generate report
+    // Step 2: Phase 1 — numbers only (fast, ~6-8s)
     setState('generating');
+    let phase1Report: CarReportType;
     try {
       const res = await fetch('/api/generate-report', {
         method: 'POST',
@@ -59,27 +61,65 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
         setState('error');
         return;
       }
-
-      const generatedReport: CarReportType = data.report;
-      setReport(generatedReport);
-      setState('done');
-
-      // Save to history
-      const historyItem: HistoryItem = {
-        vin: decodedVehicle.vin,
-        make: decodedVehicle.make,
-        model: decodedVehicle.model,
-        year: decodedVehicle.year,
-        trim: decodedVehicle.trim,
-        dateViewed: new Date().toISOString(),
-        vehicleData: decodedVehicle,
-        report: generatedReport,
-      };
-      saveToHistory(historyItem);
-      onHistoryUpdate();
+      phase1Report = data.report;
     } catch {
       setError('Failed to generate report. Please try again.');
       setState('error');
+      return;
+    }
+
+    // Show numbers immediately
+    setReport(phase1Report);
+    setState('done');
+    setProseLoading(true);
+
+    // Save phase 1 to history right away so Back works
+    const historyItem: HistoryItem = {
+      vin: decodedVehicle.vin,
+      make: decodedVehicle.make,
+      model: decodedVehicle.model,
+      year: decodedVehicle.year,
+      trim: decodedVehicle.trim,
+      dateViewed: new Date().toISOString(),
+      vehicleData: decodedVehicle,
+      report: phase1Report,
+    };
+    saveToHistory(historyItem);
+    onHistoryUpdate();
+
+    // Step 3: Phase 2 — prose in background (doesn't block UI)
+    try {
+      const enrichRes = await fetch('/api/enrich-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicle: decodedVehicle, numbers: phase1Report }),
+      });
+      const enrichData = await enrichRes.json();
+      if (enrichRes.ok && enrichData.prose) {
+        const { prose } = enrichData;
+        const enrichedReport: CarReportType = {
+          ...phase1Report,
+          vehicleSummary: prose.vehicleSummary,
+          purchasePriceContext: { ...phase1Report.purchasePriceContext, analysis: prose.purchasePriceContext?.analysis },
+          financingEstimate: { ...phase1Report.financingEstimate, analysis: prose.financingEstimate?.analysis },
+          insuranceEstimate: { ...phase1Report.insuranceEstimate, analysis: prose.insuranceEstimate?.analysis },
+          fuelCosts: { ...phase1Report.fuelCosts, analysis: prose.fuelCosts?.analysis },
+          depreciationResidualValue: { ...phase1Report.depreciationResidualValue, analysis: prose.depreciationResidualValue?.analysis },
+          totalCostOfOwnership: { ...phase1Report.totalCostOfOwnership, breakdown: prose.totalCostOfOwnership?.breakdown },
+          bottomLine: {
+            ...phase1Report.bottomLine,
+            verdict: prose.bottomLine?.verdict,
+            watchOut: prose.bottomLine?.watchOut,
+            askDealer: prose.bottomLine?.askDealer,
+          },
+        };
+        setReport(enrichedReport);
+        updateHistoryReport(decodedVehicle.vin, enrichedReport);
+      }
+    } catch {
+      // prose failed silently — numbers are still shown
+    } finally {
+      setProseLoading(false);
     }
   };
 
@@ -121,7 +161,7 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
           >
             ← New Search
           </button>
-          <CarReport report={report} vehicle={vehicle} theme={theme} />
+          <CarReport report={report} vehicle={vehicle} theme={theme} proseLoading={proseLoading} />
         </div>
       )}
     </div>

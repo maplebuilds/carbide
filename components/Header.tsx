@@ -11,7 +11,7 @@ interface HeaderProps {
 export default function Header({ theme, onToggleTheme }: HeaderProps) {
   return (
     <header className={`sticky top-0 z-50 border-b ${
-      theme === 'dark' ? 'bg-[#1a1a1a] border-white/10' : 'bg-[#F5F5F5] border-black/10'
+      theme === 'dark' ? 'bg-[#0e0e10] border-white/10' : 'bg-[#F5F5F5] border-black/10'
     }`}>
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <CarbideLogo size="sm" className={theme === 'dark' ? 'text-white' : 'text-[#1a1a1a]'} />

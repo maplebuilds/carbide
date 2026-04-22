@@ -26,6 +26,15 @@ export function saveToHistory(item: HistoryItem): void {
   }
 }
 
+export function updateHistoryReport(vin: string, report: import('./types').CarReport): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const history = getHistory();
+    const updated = history.map(h => h.vin === vin ? { ...h, report } : h);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
 export function getTheme(): 'dark' | 'light' {
   if (typeof window === 'undefined') return 'dark';
   try {
@@ -40,6 +49,29 @@ export function saveTheme(theme: 'dark' | 'light'): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(THEME_KEY, theme);
+  } catch {}
+}
+
+const DEALER_PRICES_KEY = 'carbide_dealer_prices';
+
+export function getDealerPrice(vin: string): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(DEALER_PRICES_KEY);
+    const prices: Record<string, number> = stored ? JSON.parse(stored) : {};
+    return prices[vin] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDealerPrice(vin: string, price: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const stored = localStorage.getItem(DEALER_PRICES_KEY);
+    const prices: Record<string, number> = stored ? JSON.parse(stored) : {};
+    prices[vin] = price;
+    localStorage.setItem(DEALER_PRICES_KEY, JSON.stringify(prices));
   } catch {}
 }
 

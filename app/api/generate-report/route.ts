@@ -2,80 +2,79 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { VehicleData } from '@/lib/types';
 
-const client = new Anthropic();
 
-const SYSTEM_PROMPT = `You are Carbide — a sharp, protective automotive advisor helping first-time car buyers understand the true cost of owning a vehicle. You write like a knowledgeable friend who has your back, not a finance robot. You're direct, honest, and slightly witty. You never use jargon without immediately explaining it in plain English.
+const SYSTEM_PROMPT = `You are Carbide — a sharp, protective automotive advisor for first-time car buyers. Your job is to estimate accurate ownership costs for used vehicles.
 
-Your job is to generate a comprehensive car ownership cost analysis. When a financial term might confuse a first-time buyer, explain it in parentheses.
+CRITICAL: Always return valid JSON matching the exact schema. Be specific with numbers. Never use placeholders.`;
 
-CRITICAL: Always return valid JSON matching the exact schema provided. Use realistic estimates based on the vehicle data. Never use placeholder text. Be specific with numbers.`;
-
-function buildPrompt(vehicle: VehicleData): string {
+function buildPhase1Prompt(vehicle: VehicleData): string {
   const vehicleDesc = `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`;
+  const currentYear = new Date().getFullYear();
+  const vehicleAge = currentYear - parseInt(vehicle.year);
+  const milesLow = (vehicleAge * 10000).toLocaleString();
+  const milesHigh = (vehicleAge * 15000).toLocaleString();
+  const milesMid = (vehicleAge * 12500).toLocaleString();
 
-  return `Analyze this vehicle for a first-time car buyer:
+  return `Generate ownership cost numbers for this used vehicle. Return ONLY the JSON — no explanation.
 
-VIN: ${vehicle.vin}
 Vehicle: ${vehicleDesc}
+Age: ${vehicleAge} years old (${new Date().getFullYear()})
+Est. mileage: ~${milesLow}–${milesHigh} miles
 Engine: ${vehicle.engine || 'Unknown'}
 Drivetrain: ${vehicle.drivetrain || 'Unknown'}
-Fuel Type: ${vehicle.fuelType || 'Gasoline'}
-Body Style: ${vehicle.bodyClass || 'Unknown'}
+Fuel: ${vehicle.fuelType || 'Gasoline'}
+Body: ${vehicle.bodyClass || 'Unknown'}
 
-Generate a complete cost analysis. Return ONLY valid JSON with this exact structure:
+PRICING RULES — follow exactly:
+- fairMarketLow/High = what this USED vehicle trades for TODAY (CarGurus/KBB/Edmunds), NOT MSRP
+- This is a ${vehicleAge}-year-old car with ~${milesMid} miles. Price accordingly.
+- Brands like Alfa Romeo, Land Rover, Lincoln depreciate hard. Japanese/Korean brands hold better.
+- Range spread: $3,000–$6,000 for most; wider for luxury/specialty
+- depreciationResidualValue.currentValue must equal the fairMarket midpoint
+- year1Total = fairMarket midpoint + annual insurance + annual fuel + annual maintenance
+- year3Total = fairMarket midpoint + (3 × annual running costs)
+
+Return this JSON structure with real numbers only (no analysis text):
 
 {
-  "vehicleSummary": {
-    "overview": "2-3 sentence plain English summary of what this car is. Include what type of driver it's designed for and any notable features.",
-    "specs": "Key specs summary: engine, transmission type, drivetrain, fuel type, body style. Explain any terms a first-time buyer might not know."
-  },
   "purchasePriceContext": {
     "fairMarketLow": "$XX,XXX",
-    "fairMarketHigh": "$XX,XXX",
-    "analysis": "2-3 sentences explaining the price range, what factors affect it (mileage, condition, region), and how to use this info at the dealership."
+    "fairMarketHigh": "$XX,XXX"
   },
   "financingEstimate": {
     "monthlyGoodCredit60": "$XXX",
     "monthlyGoodCredit72": "$XXX",
     "monthlyFairCredit60": "$XXX",
-    "monthlyFairCredit72": "$XXX",
-    "analysis": "2-3 sentences explaining these estimates, what 'good credit' (720+) vs 'fair credit' (620-719) means for your rate, and what to watch out for at the dealership finance office."
+    "monthlyFairCredit72": "$XXX"
   },
   "insuranceEstimate": {
     "monthlyLow": "$XXX",
-    "monthlyHigh": "$XXX",
-    "analysis": "2-3 sentences explaining the range, what factors push insurance higher or lower for this specific vehicle (engine size, theft rates, safety ratings), and a tip for saving."
+    "monthlyHigh": "$XXX"
   },
   "fuelCosts": {
     "mpgCity": "XX",
     "mpgHighway": "XX",
     "mpgCombined": "XX",
     "monthlyCost": "$XXX",
-    "annualCost": "$X,XXX",
-    "analysis": "2 sentences using national average gas price (~$3.40/gallon), assuming 1,000 miles/month. Note if this vehicle gets notably good or bad mileage for its class."
+    "annualCost": "$X,XXX"
   },
   "maintenanceReliability": {
     "annualCost": "$X,XXX",
-    "knownIssues": "Bullet list of 3-5 known issues or common repair items for this specific make/model/year. Be honest — this is exactly what a first-time buyer needs to know.",
-    "majorRisks": "What are the 1-2 biggest repair risks that could cost $1,000+ on this vehicle? Be specific.",
-    "reliabilityRating": "Excellent / Good / Average / Below Average / Poor — with a one-sentence reason why."
+    "reliabilityRating": "Good/Average/etc — one sentence reason",
+    "knownIssues": "• Issue 1\\n• Issue 2\\n• Issue 3",
+    "majorRisks": "1-2 specific repair risks over $1,000 for this model"
   },
   "depreciationResidualValue": {
     "currentValue": "$XX,XXX",
     "value1Year": "$XX,XXX",
     "value3Year": "$XX,XXX",
-    "value5Year": "$XX,XXX",
-    "analysis": "2-3 sentences explaining depreciation in plain English (what it means, why it matters), how fast this specific vehicle loses value compared to average, and whether it holds value well."
+    "value5Year": "$XX,XXX"
   },
   "totalCostOfOwnership": {
     "year1Total": "$XX,XXX",
-    "year3Total": "$XX,XXX",
-    "breakdown": "Short breakdown of how you calculated these: purchase + financing + insurance + fuel + maintenance. Make it easy to understand."
+    "year3Total": "$XX,XXX"
   },
   "bottomLine": {
-    "verdict": "3-4 sentences. Honest, direct assessment. Is this a smart buy for a first-time buyer? What's the context? Write like you're giving advice to a younger sibling.",
-    "watchOut": "2-3 specific things to watch out for with this vehicle — dealer tactics, known problems, hidden costs. Be specific to this make/model.",
-    "askDealer": "3 specific questions the buyer should ask the dealer about this specific vehicle. Make them questions that will catch the dealer off guard or reveal important info.",
     "smartBuy": true
   }
 }`;
@@ -90,21 +89,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid vehicle data.' }, { status: 400 });
     }
 
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
-      system: SYSTEM_PROMPT,
+      max_tokens: 1000,
+      system: [
+        {
+          type: 'text',
+          text: SYSTEM_PROMPT,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       messages: [
         {
           role: 'user',
-          content: buildPrompt(vehicle),
+          content: buildPhase1Prompt(vehicle),
         },
       ],
     });
 
     const rawText = message.content[0].type === 'text' ? message.content[0].text : '';
-
-    // Extract JSON from the response
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: 'Failed to generate report. Please try again.' }, { status: 500 });

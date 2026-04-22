@@ -38,8 +38,8 @@ export default function CarbideLogo({ className = '', size = 'md' }: CarbideLogo
 
       {/* Wordmark */}
       <span
-        className="font-black uppercase tracking-widest text-inherit"
-        style={{ fontSize: s.fontSize, letterSpacing: s.letterSpacing, fontFamily: "'Arial Black', 'Impact', sans-serif" }}
+        className="font-black uppercase text-inherit"
+        style={{ fontSize: s.fontSize, letterSpacing: s.letterSpacing }}
       >
         CARBIDE
       </span>

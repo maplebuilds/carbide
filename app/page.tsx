@@ -58,7 +58,7 @@ export default function Home() {
     }
   };
 
-  const bgColor = theme === 'dark' ? '#1a1a1a' : '#F5F5F5';
+  const bgColor = theme === 'dark' ? '#0e0e10' : '#F5F5F5';
   const textColor = theme === 'dark' ? '#ffffff' : '#1a1a1a';
 
   if (!mounted) {

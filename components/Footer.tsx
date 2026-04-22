@@ -1,5 +1,7 @@
 'use client';
 
+import pkg from '@/package.json';
+
 interface FooterProps {
   theme: 'dark' | 'light';
 }
@@ -14,7 +16,7 @@ export default function Footer({ theme }: FooterProps) {
           Estimates are for informational purposes only. Always verify with a licensed dealer and insurance provider.
         </p>
         <p className={`text-xs font-mono ${theme === 'dark' ? 'text-white/20' : 'text-black/20'}`}>
-          v0.1.0
+          v{pkg.version}
         </p>
       </div>
     </footer>
