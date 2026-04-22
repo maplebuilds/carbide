@@ -315,8 +315,14 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
     ? calcMonthlyPayment(analyzedDealerPrice, 7.5, 60)
     : report.financingEstimate.monthlyGoodCredit60;
 
-  const tcoMidpointDelta = analyzedDealerPrice !== null
-    ? analyzedDealerPrice - (marketLow + marketHigh) / 2 : 0;
+  // Compute TCO from actual displayed numbers so the math always adds up
+  const annualInsurance = Math.round(((parseDollar(report.insuranceEstimate.monthlyLow) + parseDollar(report.insuranceEstimate.monthlyHigh)) / 2) * 12 / 100) * 100;
+  const annualFuel = parseDollar(report.fuelCosts.annualCost);
+  const annualMaintenance = parseDollar(report.maintenanceReliability.annualCost);
+  const annualRunning = annualInsurance + annualFuel + annualMaintenance;
+  const basePrice = analyzedDealerPrice ?? Math.round((marketLow + marketHigh) / 2);
+  const year1Total = basePrice + annualRunning;
+  const year3Total = basePrice + annualRunning * 3;
 
   return (
     <div className="relative">
@@ -455,9 +461,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           <div className={`rounded-xl p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 ${isDark ? 'text-white/30' : 'text-black/30'}`}>3-Year TCO</p>
             <p className="font-data text-[22px] font-medium leading-none text-[#00B4FF]">
-              {analyzedDealerPrice
-                ? formatDollar(parseDollar(report.totalCostOfOwnership.year3Total) + tcoMidpointDelta)
-                : report.totalCostOfOwnership.year3Total}
+              {formatDollar(year3Total)}
             </p>
             <p className={`text-[11px] mt-1.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>total cost of ownership</p>
           </div>
@@ -479,16 +483,12 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           <CostRow label="Maintenance (annual)" value={report.maintenanceReliability.annualCost} theme={theme} />
           <CostRow
             label="Year 1 All-In"
-            value={analyzedDealerPrice !== null
-              ? formatDollar(parseDollar(report.totalCostOfOwnership.year1Total) + tcoMidpointDelta)
-              : report.totalCostOfOwnership.year1Total}
+            value={formatDollar(year1Total)}
             theme={theme}
           />
           <CostRow
             label="3-Year Total"
-            value={analyzedDealerPrice !== null
-              ? formatDollar(parseDollar(report.totalCostOfOwnership.year3Total) + tcoMidpointDelta)
-              : report.totalCostOfOwnership.year3Total}
+            value={formatDollar(year3Total)}
             highlight theme={theme}
           />
         </div>

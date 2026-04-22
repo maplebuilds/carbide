@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart2, ChevronDown, Check } from 'lucide-react';
-import { HistoryItem } from '@/lib/types';
+import { HistoryItem, CarReport as CarReportType } from '@/lib/types';
 import { useState, useRef, useEffect } from 'react';
 import { getDealerPrice, saveDealerPrice } from '@/lib/storage';
 
@@ -220,6 +220,15 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
   const badge = dealerPrice ? getDealBadge(dealerPrice, marketLow, marketHigh) : null;
   const monthly60 = dealerPrice ? calcMonthlyPayment(dealerPrice, 7.5, 60) : r.financingEstimate.monthlyGoodCredit60;
 
+  // Compute TCO from actual displayed numbers so the math always reconciles
+  const annualInsurance = Math.round(((parseDollar(r.insuranceEstimate.monthlyLow) + parseDollar(r.insuranceEstimate.monthlyHigh)) / 2) * 12 / 100) * 100;
+  const annualFuel = parseDollar(r.fuelCosts.annualCost);
+  const annualMaintenance = parseDollar(r.maintenanceReliability.annualCost);
+  const annualRunning = annualInsurance + annualFuel + annualMaintenance;
+  const basePrice = dealerPrice ?? Math.round((marketLow + marketHigh) / 2);
+  const year1Total = basePrice + annualRunning;
+  const year3Total = basePrice + annualRunning * 3;
+
   return (
     <div>
       {/* Header */}
@@ -279,7 +288,7 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
       <div className="grid grid-cols-2 gap-2 mb-4">
         {[
           { label: dealerPrice ? 'Monthly (your price)' : 'Monthly (60mo)', value: monthly60 + '/mo' },
-          { label: '3-Year TCO', value: r.totalCostOfOwnership.year3Total },
+          { label: '3-Year TCO', value: '$' + year3Total.toLocaleString() },
         ].map(item => (
           <div key={item.label} className={`rounded-lg p-3 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 ${isDark ? 'text-white/30' : 'text-black/30'}`}>{item.label}</p>
@@ -296,8 +305,8 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
         <CostRow label="Insurance (est. annual)" value={'~' + (Math.round(((parseDollar(r.insuranceEstimate.monthlyLow) + parseDollar(r.insuranceEstimate.monthlyHigh)) / 2) * 12 / 100) * 100).toLocaleString().replace(/^/, '$')} theme={theme} />
         <CostRow label="Fuel (annual)" value={r.fuelCosts.annualCost} theme={theme} />
         <CostRow label="Maintenance (annual)" value={r.maintenanceReliability.annualCost} theme={theme} />
-        <CostRow label="Year 1 All-In" value={r.totalCostOfOwnership.year1Total} theme={theme} />
-        <CostRow label="3-Year Total" value={r.totalCostOfOwnership.year3Total} highlight theme={theme} />
+        <CostRow label="Year 1 All-In" value={'$' + year1Total.toLocaleString()} theme={theme} />
+        <CostRow label="3-Year Total" value={'$' + year3Total.toLocaleString()} highlight theme={theme} />
       </div>
 
       {/* Flags */}
@@ -385,14 +394,26 @@ function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem
   const monthlyA = dealerA ? calcMonthlyPayment(dealerA, 7.5, 60) : ra.financingEstimate.monthlyGoodCredit60;
   const monthlyB = dealerB ? calcMonthlyPayment(dealerB, 7.5, 60) : rb.financingEstimate.monthlyGoodCredit60;
 
+  // Compute TCO from actual displayed numbers
+  const computeTCO3 = (r: typeof ra, dealer: number | null) => {
+    const mktLow = parseDollar(r.purchasePriceContext.fairMarketLow);
+    const mktHigh = parseDollar(r.purchasePriceContext.fairMarketHigh);
+    const ins = Math.round(((parseDollar(r.insuranceEstimate.monthlyLow) + parseDollar(r.insuranceEstimate.monthlyHigh)) / 2) * 12 / 100) * 100;
+    const fuel = parseDollar(r.fuelCosts.annualCost);
+    const maint = parseDollar(r.maintenanceReliability.annualCost);
+    const base = dealer ?? Math.round((mktLow + mktHigh) / 2);
+    return base + (ins + fuel + maint) * 3;
+  };
+  const tco3A = computeTCO3(ra, dealerA);
+  const tco3B = computeTCO3(rb, dealerB);
+
   const metrics: Array<{
     label: string;
     aVal: string; bVal: string;
     aWins: boolean; bWins: boolean;
   }> = [
     (() => {
-      const a = parseDollar(ra.totalCostOfOwnership.year3Total), b = parseDollar(rb.totalCostOfOwnership.year3Total);
-      return { label: '3-Yr TCO', aVal: ra.totalCostOfOwnership.year3Total, bVal: rb.totalCostOfOwnership.year3Total, aWins: a < b, bWins: b < a };
+      return { label: '3-Yr TCO', aVal: '$' + tco3A.toLocaleString(), bVal: '$' + tco3B.toLocaleString(), aWins: tco3A < tco3B, bWins: tco3B < tco3A };
     })(),
     (() => {
       const a = parseDollar(monthlyA), b = parseDollar(monthlyB);
@@ -481,8 +502,18 @@ function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem
 
 function Verdict({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; theme: 'dark' | 'light' }) {
   const isDark = theme === 'dark';
-  const tcoA = parseDollar(carA.report.totalCostOfOwnership.year3Total);
-  const tcoB = parseDollar(carB.report.totalCostOfOwnership.year3Total);
+  const computeTCO3Verdict = (r: CarReportType, vin: string) => {
+    const dealer = getDealerPrice(vin);
+    const mktLow = parseDollar(r.purchasePriceContext.fairMarketLow);
+    const mktHigh = parseDollar(r.purchasePriceContext.fairMarketHigh);
+    const ins = Math.round(((parseDollar(r.insuranceEstimate.monthlyLow) + parseDollar(r.insuranceEstimate.monthlyHigh)) / 2) * 12 / 100) * 100;
+    const fuel = parseDollar(r.fuelCosts.annualCost);
+    const maint = parseDollar(r.maintenanceReliability.annualCost);
+    const base = dealer ?? Math.round((mktLow + mktHigh) / 2);
+    return base + (ins + fuel + maint) * 3;
+  };
+  const tcoA = computeTCO3Verdict(carA.report, carA.vin);
+  const tcoB = computeTCO3Verdict(carB.report, carB.vin);
   const costWinner = tcoA < tcoB ? carA : carB;
   const costLoser = tcoA < tcoB ? carB : carA;
   const tcoDiff = Math.abs(tcoA - tcoB);
