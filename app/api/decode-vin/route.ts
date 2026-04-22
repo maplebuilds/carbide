@@ -48,7 +48,11 @@ export async function GET(req: NextRequest) {
       year,
       make,
       model,
-      trim: results['Trim'] || results['Series'] || '',
+      trim: [results['Trim'], results['Series'], results['Series2'], results['Trim2']]
+        .map(v => (v && v !== 'Not Applicable' && v !== 'null' ? v.trim() : ''))
+        .filter(Boolean)
+        .filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
+        .join(' ') || '',
       engine: results['EngineCylinders']
         ? `${results['DisplacementL'] || ''} ${results['EngineCylinders']}-cylinder`.trim()
         : results['DisplacementL'] || '',

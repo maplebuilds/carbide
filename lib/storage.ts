@@ -18,6 +18,8 @@ export function saveToHistory(item: HistoryItem): void {
   if (typeof window === 'undefined') return;
   try {
     const history = getHistory();
+    // Skip write if this VIN is already at the top with the same data
+    if (history[0]?.vin === item.vin && history[0]?.dateViewed === item.dateViewed) return;
     const filtered = history.filter((h) => h.vin !== item.vin);
     const updated = [item, ...filtered].slice(0, 20);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
@@ -30,6 +32,9 @@ export function updateHistoryReport(vin: string, report: import('./types').CarRe
   if (typeof window === 'undefined') return;
   try {
     const history = getHistory();
+    const existing = history.find(h => h.vin === vin);
+    // Skip write if report hasn't changed
+    if (existing && JSON.stringify(existing.report) === JSON.stringify(report)) return;
     const updated = history.map(h => h.vin === vin ? { ...h, report } : h);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
   } catch {}

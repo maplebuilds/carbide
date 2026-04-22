@@ -156,7 +156,13 @@ function getDealBadge(dealerPrice: number, marketLow: number, marketHigh: number
 
 // ─── Car section ──────────────────────────────────────────────────────────────
 
-function CarSection({ car, theme }: { car: HistoryItem; theme: 'dark' | 'light' }) {
+interface CarFeatures {
+  tech?: string[];
+  sport?: string[];
+  trimAdvantage?: string;
+}
+
+function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dark' | 'light'; featuresRef?: (f: CarFeatures | null) => void }) {
   const isDark = theme === 'dark';
   const r = car.report;
   const relRank = reliabilityRank(r.maintenanceReliability.reliabilityRating);
@@ -164,6 +170,9 @@ function CarSection({ car, theme }: { car: HistoryItem; theme: 'dark' | 'light' 
 
   const [dealerPriceInput, setDealerPriceInput] = useState('');
   const [dealerPrice, setDealerPrice] = useState<number | null>(null);
+  const [features, setFeatures] = useState<CarFeatures | null>(null);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+  const [featuresError, setFeaturesError] = useState(false);
 
   useEffect(() => {
     const saved = getDealerPrice(car.vin);
@@ -176,6 +185,34 @@ function CarSection({ car, theme }: { car: HistoryItem; theme: 'dark' | 'light' 
   const analyzePrice = () => {
     const p = parseInt(dealerPriceInput.replace(/[^0-9]/g, ''), 10);
     if (p > 0) { setDealerPrice(p); saveDealerPrice(car.vin, p); }
+  };
+
+  const loadFeatures = async () => {
+    setFeaturesLoading(true);
+    setFeaturesError(false);
+    try {
+      const res = await fetch('/api/enrich-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicle: car.vehicleData, numbers: car.report, section: 'features' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.prose?.keyFeatures) {
+        const f: CarFeatures = {
+          tech: data.prose.keyFeatures.tech,
+          sport: data.prose.keyFeatures.sport,
+          trimAdvantage: data.prose.keyFeatures.trimAdvantage,
+        };
+        setFeatures(f);
+        featuresRef?.(f);
+      } else {
+        setFeaturesError(true);
+      }
+    } catch {
+      setFeaturesError(true);
+    } finally {
+      setFeaturesLoading(false);
+    }
   };
 
   const marketLow = parseDollar(r.purchasePriceContext.fairMarketLow);
@@ -261,12 +298,74 @@ function CarSection({ car, theme }: { car: HistoryItem; theme: 'dark' | 'light' 
       </div>
 
       {/* Flags */}
-      <div>
+      <div className="mb-4">
         <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>Flags</p>
         {relRank >= 4 && <Flag type="green" theme={theme}><strong>Reliability:</strong> {reliabilityShort(r.maintenanceReliability.reliabilityRating)}</Flag>}
         {issues.map((issue, i) => <Flag key={i} type={relRank <= 2 ? 'red' : 'yellow'} theme={theme}>{issue}</Flag>)}
         <Flag type="red" theme={theme}><strong>Major risk:</strong> {r.maintenanceReliability.majorRisks}</Flag>
         <Flag type="yellow" theme={theme}><strong>Watch out:</strong> {r.bottomLine.watchOut}</Flag>
+      </div>
+
+      {/* Key Features */}
+      <div className={`rounded-lg border p-4 ${isDark ? 'border-white/[0.07] bg-white/[0.02]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+        <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-3 ${isDark ? 'text-white/25' : 'text-black/25'}`}>Key Features</p>
+        {features ? (
+          <div className="space-y-3">
+            {features.tech && features.tech.length > 0 && (
+              <div>
+                <p className="font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 text-[#FF5E00]">Tech</p>
+                <ul className="space-y-1">
+                  {features.tech.map((f, i) => (
+                    <li key={i} className={`flex items-start gap-2 text-[12px] ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {features.sport && features.sport.length > 0 && (
+              <div>
+                <p className="font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 text-[#FF5E00]">Sport</p>
+                <ul className="space-y-1">
+                  {features.sport.map((f, i) => (
+                    <li key={i} className={`flex items-start gap-2 text-[12px] ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {features.trimAdvantage && (
+              <div className={`pt-3 border-t ${isDark ? 'border-white/[0.07]' : 'border-black/[0.07]'}`}>
+                <p className={`font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>Why This Trim Over Base</p>
+                <p className={`text-[12px] leading-relaxed ${isDark ? 'text-white/55' : 'text-black/55'}`}>{features.trimAdvantage}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {featuresError && <p className="text-[11px] text-red-400/80 mb-2 text-center font-data">Failed — tap to retry</p>}
+            <button
+              onClick={loadFeatures}
+              disabled={featuresLoading}
+              className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg border font-data text-[11px] uppercase tracking-wider transition-all active:scale-95 ${
+                featuresLoading
+                  ? isDark ? 'border-white/[0.07] text-white/25 cursor-wait' : 'border-black/[0.07] text-black/25 cursor-wait'
+                  : featuresError
+                    ? 'border-red-400/40 text-red-400/70 hover:border-red-400/70 hover:text-red-400'
+                    : isDark
+                      ? 'border-white/[0.1] text-white/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
+                      : 'border-black/[0.1] text-black/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
+              }`}
+            >
+              {featuresLoading ? (
+                <><span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" /> Analyzing…</>
+              ) : featuresError ? '↺ Retry' : '↓ Get Features'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -278,6 +377,11 @@ function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem
   const isDark = theme === 'dark';
   const ra = carA.report, rb = carB.report;
 
+  const dealerA = getDealerPrice(carA.vin);
+  const dealerB = getDealerPrice(carB.vin);
+  const monthlyA = dealerA ? calcMonthlyPayment(dealerA, 7.5, 60) : ra.financingEstimate.monthlyGoodCredit60;
+  const monthlyB = dealerB ? calcMonthlyPayment(dealerB, 7.5, 60) : rb.financingEstimate.monthlyGoodCredit60;
+
   const metrics: Array<{
     label: string;
     aVal: string; bVal: string;
@@ -288,8 +392,8 @@ function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem
       return { label: '3-Yr TCO', aVal: ra.totalCostOfOwnership.year3Total, bVal: rb.totalCostOfOwnership.year3Total, aWins: a < b, bWins: b < a };
     })(),
     (() => {
-      const a = parseDollar(ra.financingEstimate.monthlyGoodCredit60), b = parseDollar(rb.financingEstimate.monthlyGoodCredit60);
-      return { label: 'Payment', aVal: ra.financingEstimate.monthlyGoodCredit60 + '/mo', bVal: rb.financingEstimate.monthlyGoodCredit60 + '/mo', aWins: a < b, bWins: b < a };
+      const a = parseDollar(monthlyA), b = parseDollar(monthlyB);
+      return { label: 'Payment', aVal: monthlyA + '/mo', bVal: monthlyB + '/mo', aWins: a < b, bWins: b < a };
     })(),
     (() => {
       const avgA = (parseDollar(ra.insuranceEstimate.monthlyLow) + parseDollar(ra.insuranceEstimate.monthlyHigh)) / 2;

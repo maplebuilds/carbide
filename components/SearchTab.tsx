@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import VinInput from './VinInput';
 import LoadingReport from './LoadingReport';
 import CarReport from './CarReport';
@@ -21,8 +21,15 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
   const [report, setReport] = useState<CarReportType | null>(initialItem?.report ?? null);
   const [error, setError] = useState<string>('');
   const [proseLoading, setProseLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const handleVinSubmit = async (vin: string) => {
+    // Cancel any in-flight requests from a previous search
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
     setError('');
     setState('decoding');
     setVehicle(null);
@@ -31,7 +38,7 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
     // Step 1: Decode VIN
     let decodedVehicle: VehicleData;
     try {
-      const res = await fetch(`/api/decode-vin?vin=${encodeURIComponent(vin)}`);
+      const res = await fetch(`/api/decode-vin?vin=${encodeURIComponent(vin)}`, { signal });
       const data = await res.json();
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to decode VIN.');
@@ -40,7 +47,8 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
       }
       decodedVehicle = data.vehicle;
       setVehicle(decodedVehicle);
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       setError('Network error. Please check your connection and try again.');
       setState('error');
       return;
@@ -54,6 +62,7 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vehicle: decodedVehicle }),
+        signal,
       });
       const data = await res.json();
       if (!res.ok || data.error) {
@@ -62,7 +71,8 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
         return;
       }
       phase1Report = data.report;
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       setError('Failed to generate report. Please try again.');
       setState('error');
       return;
@@ -93,6 +103,7 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vehicle: decodedVehicle, numbers: phase1Report }),
+        signal,
       });
       const enrichData = await enrichRes.json();
       if (enrichRes.ok && enrichData.prose) {
@@ -116,7 +127,8 @@ export default function SearchTab({ theme, onHistoryUpdate, initialItem }: Searc
         setReport(enrichedReport);
         updateHistoryReport(decodedVehicle.vin, enrichedReport);
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       // prose failed silently — numbers are still shown
     } finally {
       setProseLoading(false);

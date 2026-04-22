@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import EmailCapture from './EmailCapture';
 import { CarReport as CarReportType, VehicleData } from '@/lib/types';
@@ -12,6 +12,24 @@ interface CarReportProps {
   theme: 'dark' | 'light';
   proseLoading?: boolean;
 }
+
+// ─── Static data (defined once at module level, not per-render) ──────────────
+
+const MAKE_DOMAIN_MAP: Record<string, string> = {
+  toyota: 'toyota.com', honda: 'honda.com', ford: 'ford.com',
+  chevrolet: 'chevrolet.com', chevy: 'chevrolet.com', gmc: 'gmc.com',
+  dodge: 'dodge.com', chrysler: 'chrysler.com', jeep: 'jeep.com',
+  ram: 'ramtrucks.com', nissan: 'nissanusa.com', hyundai: 'hyundaiusa.com',
+  kia: 'kia.com', subaru: 'subaru.com', volkswagen: 'vw.com',
+  bmw: 'bmw.com', mercedes: 'mercedes-benz.com', 'mercedes-benz': 'mercedes-benz.com',
+  audi: 'audi.com', lexus: 'lexus.com', acura: 'acura.com',
+  infiniti: 'infinitiusa.com', cadillac: 'cadillac.com', lincoln: 'lincoln.com',
+  buick: 'buick.com', volvo: 'volvocars.com', mazda: 'mazdausa.com',
+  mitsubishi: 'mitsubishicars.com', porsche: 'porsche.com', tesla: 'tesla.com',
+  genesis: 'genesis.com', maserati: 'maserati.com', jaguar: 'jaguar.com',
+  'land rover': 'landrover.com', mini: 'miniusa.com', fiat: 'fiatusa.com',
+  alfa: 'alfaromeousa.com',
+};
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -107,27 +125,34 @@ function Stat({ label, value, accent, dim, theme }: { label: string; value: stri
   );
 }
 
-function AnalyzeButton({ onClick, loading, theme }: { onClick: () => void; loading: boolean; theme: 'dark' | 'light' }) {
+function AnalyzeButton({ onClick, loading, error, theme }: { onClick: () => void; loading: boolean; error?: boolean; theme: 'dark' | 'light' }) {
   const isDark = theme === 'dark';
   return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className={`mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border font-data text-[11px] uppercase tracking-wider transition-all active:scale-95 ${
-        loading
-          ? isDark ? 'border-white/[0.07] text-white/25 cursor-wait' : 'border-black/[0.07] text-black/25 cursor-wait'
-          : isDark
-            ? 'border-white/[0.1] text-white/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
-            : 'border-black/[0.1] text-black/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
-      }`}
-    >
-      {loading ? (
-        <>
-          <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-          Analyzing…
-        </>
-      ) : '↓ Get Analysis'}
-    </button>
+    <>
+      {error && (
+        <p className="mt-3 text-center font-data text-[11px] text-red-400/80">Analysis failed — tap to retry</p>
+      )}
+      <button
+        onClick={onClick}
+        disabled={loading}
+        className={`mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border font-data text-[11px] uppercase tracking-wider transition-all active:scale-95 ${
+          loading
+            ? isDark ? 'border-white/[0.07] text-white/25 cursor-wait' : 'border-black/[0.07] text-black/25 cursor-wait'
+            : error
+              ? 'border-red-400/40 text-red-400/70 hover:border-red-400/70 hover:text-red-400'
+              : isDark
+                ? 'border-white/[0.1] text-white/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
+                : 'border-black/[0.1] text-black/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
+        }`}
+      >
+        {loading ? (
+          <>
+            <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+            Analyzing…
+          </>
+        ) : error ? '↺ Retry Analysis' : '↓ Get Analysis'}
+      </button>
+    </>
   );
 }
 
@@ -144,7 +169,7 @@ function AffiliateCTA({ label, href, theme, trackingId }: { label: string; href:
 
 // ─── Section analysis state types ────────────────────────────────────────────
 
-type SectionKey = 'purchase' | 'financing' | 'insurance' | 'fuel' | 'depreciation' | 'verdict';
+type SectionKey = 'purchase' | 'financing' | 'insurance' | 'fuel' | 'depreciation' | 'verdict' | 'features';
 
 interface SectionData {
   analysis?: string;
@@ -153,6 +178,10 @@ interface SectionData {
   verdict?: string;
   watchOut?: string;
   askDealer?: string;
+  // features section
+  tech?: string[];
+  sport?: string[];
+  trimAdvantage?: string;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -163,6 +192,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
   const [analyzedDealerPrice, setAnalyzedDealerPrice] = useState<number | null>(null);
   const [sectionData, setSectionData] = useState<Partial<Record<SectionKey, SectionData>>>({});
   const [sectionLoading, setSectionLoading] = useState<Partial<Record<SectionKey, boolean>>>({});
+  const [sectionErrors, setSectionErrors] = useState<Partial<Record<SectionKey, boolean>>>({});
 
   // Pre-populate from existing report prose (loaded from history)
   useEffect(() => {
@@ -199,22 +229,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
 
   // Brand logo watermark
   useEffect(() => {
-    const makeDomainMap: Record<string, string> = {
-      toyota: 'toyota.com', honda: 'honda.com', ford: 'ford.com',
-      chevrolet: 'chevrolet.com', chevy: 'chevrolet.com', gmc: 'gmc.com',
-      dodge: 'dodge.com', chrysler: 'chrysler.com', jeep: 'jeep.com',
-      ram: 'ramtrucks.com', nissan: 'nissanusa.com', hyundai: 'hyundaiusa.com',
-      kia: 'kia.com', subaru: 'subaru.com', volkswagen: 'vw.com',
-      bmw: 'bmw.com', mercedes: 'mercedes-benz.com', 'mercedes-benz': 'mercedes-benz.com',
-      audi: 'audi.com', lexus: 'lexus.com', acura: 'acura.com',
-      infiniti: 'infinitiusa.com', cadillac: 'cadillac.com', lincoln: 'lincoln.com',
-      buick: 'buick.com', volvo: 'volvocars.com', mazda: 'mazdausa.com',
-      mitsubishi: 'mitsubishicars.com', porsche: 'porsche.com', tesla: 'tesla.com',
-      genesis: 'genesis.com', maserati: 'maserati.com', jaguar: 'jaguar.com',
-      'land rover': 'landrover.com', mini: 'miniusa.com', fiat: 'fiatusa.com',
-      alfa: 'alfaromeousa.com',
-    };
-    const domain = makeDomainMap[vehicle.make.toLowerCase()] || `${vehicle.make.toLowerCase().replace(/\s+/g, '')}.com`;
+    const domain = MAKE_DOMAIN_MAP[vehicle.make.toLowerCase()] || `${vehicle.make.toLowerCase().replace(/\s+/g, '')}.com`;
     const url = `https://logo.clearbit.com/${domain}`;
     const img = new Image();
     img.onload = () => setLogoUrl(url);
@@ -222,8 +237,9 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
     img.src = url;
   }, [vehicle.make]);
 
-  const analyzeSection = async (section: SectionKey) => {
+  const analyzeSection = useCallback(async (section: SectionKey) => {
     setSectionLoading(prev => ({ ...prev, [section]: true }));
+    setSectionErrors(prev => ({ ...prev, [section]: false }));
     try {
       const res = await fetch('/api/enrich-report', {
         method: 'POST',
@@ -232,7 +248,6 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
       });
       const data = await res.json();
       if (res.ok && data.prose) {
-        // Flatten the nested prose response into our flat SectionData shape
         const prose = data.prose;
         let flat: SectionData = {};
         if (section === 'purchase')     flat = { analysis: prose.purchasePriceContext?.analysis };
@@ -247,14 +262,21 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           watchOut:  prose.bottomLine?.watchOut,
           askDealer: prose.bottomLine?.askDealer,
         };
+        if (section === 'features')     flat = {
+          tech:          prose.keyFeatures?.tech,
+          sport:         prose.keyFeatures?.sport,
+          trimAdvantage: prose.keyFeatures?.trimAdvantage,
+        };
         setSectionData(prev => ({ ...prev, [section]: flat }));
+      } else {
+        setSectionErrors(prev => ({ ...prev, [section]: true }));
       }
     } catch {
-      // fails silently — button resets
+      setSectionErrors(prev => ({ ...prev, [section]: true }));
     } finally {
       setSectionLoading(prev => ({ ...prev, [section]: false }));
     }
-  };
+  }, [vehicle, report]);
 
   const isDark = theme === 'dark';
   const marketLow  = parseDollar(report.purchasePriceContext.fairMarketLow);
@@ -435,7 +457,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           </div>
           {sectionData.purchase?.analysis
             ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.purchase.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('purchase')} loading={!!sectionLoading.purchase} theme={theme} />}
+            : <AnalyzeButton onClick={() => analyzeSection('purchase')} loading={!!sectionLoading.purchase} error={!!sectionErrors.purchase} theme={theme} />}
         </Section>
 
         {/* Financing */}
@@ -463,7 +485,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           })()}
           {sectionData.financing?.analysis
             ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.financing.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('financing')} loading={!!sectionLoading.financing} theme={theme} />}
+            : <AnalyzeButton onClick={() => analyzeSection('financing')} loading={!!sectionLoading.financing} error={!!sectionErrors.financing} theme={theme} />}
           <AffiliateCTA label="See real loan rates for this vehicle" href="https://www.lendingtree.com/auto/?source=carbide" theme={theme} trackingId="financing-cta" />
         </Section>
 
@@ -475,7 +497,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           </div>
           {sectionData.insurance?.analysis
             ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.insurance.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('insurance')} loading={!!sectionLoading.insurance} theme={theme} />}
+            : <AnalyzeButton onClick={() => analyzeSection('insurance')} loading={!!sectionLoading.insurance} error={!!sectionErrors.insurance} theme={theme} />}
           <AffiliateCTA label="Get a real insurance quote" href="https://www.thezebra.com/?source=carbide" theme={theme} trackingId="insurance-cta" />
         </Section>
 
@@ -492,7 +514,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           </div>
           {sectionData.fuel?.analysis
             ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.fuel.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('fuel')} loading={!!sectionLoading.fuel} theme={theme} />}
+            : <AnalyzeButton onClick={() => analyzeSection('fuel')} loading={!!sectionLoading.fuel} error={!!sectionErrors.fuel} theme={theme} />}
         </Section>
 
         {/* Depreciation */}
@@ -505,7 +527,49 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           </div>
           {sectionData.depreciation?.analysis
             ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.depreciation.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('depreciation')} loading={!!sectionLoading.depreciation} theme={theme} />}
+            : <AnalyzeButton onClick={() => analyzeSection('depreciation')} loading={!!sectionLoading.depreciation} error={!!sectionErrors.depreciation} theme={theme} />}
+        </Section>
+
+        {/* Key Features */}
+        <Section label="Key Features" theme={theme}>
+          {sectionData.features ? (
+            <div className="space-y-4">
+              {sectionData.features.tech && sectionData.features.tech.length > 0 && (
+                <div>
+                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#FF5E00]`}>Tech</p>
+                  <ul className="space-y-1.5">
+                    {sectionData.features.tech.map((f, i) => (
+                      <li key={i} className={`flex items-start gap-2 text-sm ${isDark ? 'text-white/65' : 'text-black/65'}`}>
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sectionData.features.sport && sectionData.features.sport.length > 0 && (
+                <div>
+                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#FF5E00]`}>Sport</p>
+                  <ul className="space-y-1.5">
+                    {sectionData.features.sport.map((f, i) => (
+                      <li key={i} className={`flex items-start gap-2 text-sm ${isDark ? 'text-white/65' : 'text-black/65'}`}>
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sectionData.features.trimAdvantage && (
+                <div className={`pt-3 border-t ${isDark ? 'border-white/[0.07]' : 'border-black/[0.07]'}`}>
+                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Why This Trim Over Base</p>
+                  <p className={`text-sm leading-relaxed ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.features.trimAdvantage}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <AnalyzeButton onClick={() => analyzeSection('features')} loading={!!sectionLoading.features} error={!!sectionErrors.features} theme={theme} />
+          )}
         </Section>
 
         {/* The Verdict */}
@@ -534,7 +598,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               </div>
             </>
           ) : (
-            <AnalyzeButton onClick={() => analyzeSection('verdict')} loading={!!sectionLoading.verdict} theme={theme} />
+            <AnalyzeButton onClick={() => analyzeSection('verdict')} loading={!!sectionLoading.verdict} error={!!sectionErrors.verdict} theme={theme} />
           )}
         </div>
 

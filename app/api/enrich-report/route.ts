@@ -4,6 +4,9 @@ import { VehicleData, CarReport } from '@/lib/types';
 
 const SYSTEM_PROMPT = `You are Carbide — a sharp, protective automotive advisor for first-time car buyers. You write like a knowledgeable friend who has your back, not a finance robot. Direct, honest, slightly witty. Never use jargon without a plain-English explanation in parentheses. Always return valid JSON only — no markdown, no explanation outside the JSON.`;
 
+// In-memory cache: survives warm function restarts, free on cold starts
+const sectionCache = new Map<string, object>();
+
 function vehicleDesc(vehicle: VehicleData): string {
   return `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`;
 }
@@ -58,14 +61,28 @@ Return ONLY:
   }
 }`;
 
+    case 'features':
+      return `List the key features for the ${desc}${vehicle.trim ? ` (${vehicle.trim} trim)` : ''}.
+Engine: ${vehicle.engine || 'Unknown'} | Drivetrain: ${vehicle.drivetrain || 'Unknown'} | Body: ${vehicle.bodyClass || 'Unknown'}
+
+Return ONLY:
+{
+  "keyFeatures": {
+    "tech": ["4 specific tech/infotainment/safety-tech features standard on this trim"],
+    "sport": ["3-4 sport/performance/appearance features that differentiate this trim"],
+    "trimAdvantage": "1-2 sentences: what this trim adds over the base model and what type of driver it suits best."
+  }
+}`;
+
     default:
       return '';
   }
 }
 
 function maxTokensForSection(section: string): number {
-  if (section === 'verdict') return 600;
-  return 250;
+  if (section === 'verdict') return 1200;
+  if (section === 'features') return 400;
+  return 400;
 }
 
 export async function POST(req: NextRequest) {
@@ -82,6 +99,12 @@ export async function POST(req: NextRequest) {
     const prompt = section ? buildSectionPrompt(section, vehicle, numbers) : '';
     if (!prompt) {
       return NextResponse.json({ error: 'Invalid section.' }, { status: 400 });
+    }
+
+    // Return cached result if available (same VIN + section combo)
+    const cacheKey = `${vehicle.vin}:${section}`;
+    if (sectionCache.has(cacheKey)) {
+      return NextResponse.json({ prose: sectionCache.get(cacheKey) });
     }
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -105,6 +128,7 @@ export async function POST(req: NextRequest) {
     }
 
     const prose = JSON.parse(jsonMatch[0]);
+    sectionCache.set(cacheKey, prose);
     return NextResponse.json({ prose });
   } catch (err) {
     console.error('Section analysis error:', err);
