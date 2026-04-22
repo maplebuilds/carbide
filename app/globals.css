@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0e0e10;
-  --foreground: #e8e8ec;
+  --background: #07080d;
+  --foreground: #d8dde8;
+  --accent: #00B4FF;
+  --accent-dim: rgba(0, 180, 255, 0.10);
+  --accent-border: rgba(0, 180, 255, 0.28);
+  --steel-1: #12151e;
+  --steel-2: #0e1018;
+  --steel-border: rgba(90, 105, 130, 0.18);
+  --steel-border-bright: rgba(120, 140, 170, 0.28);
+  --steel-sheen: rgba(160, 180, 210, 0.04);
 }
 
 html {
@@ -12,17 +20,74 @@ html {
 
 body {
   overflow-x: hidden;
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 180, 255, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 60%, rgba(90, 105, 130, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 40%, rgba(90, 105, 130, 0.03) 0%, transparent 50%);
   color: var(--foreground);
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 
+/* ─── Steel card system ──────────────────────────────────────────────────────── */
+
+.steel-card {
+  background: linear-gradient(160deg, var(--steel-1) 0%, var(--steel-2) 100%);
+  border: 1px solid var(--steel-border);
+  border-top-color: var(--steel-border-bright);
+  position: relative;
+}
+
+.steel-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, var(--steel-sheen) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.steel-card-accent {
+  background: linear-gradient(160deg, rgba(0, 180, 255, 0.07) 0%, rgba(0, 180, 255, 0.02) 100%);
+  border: 2px solid rgba(0, 180, 255, 0.35);
+  border-top-color: rgba(0, 180, 255, 0.55);
+}
+
+/* ─── Inner card (nested within steel-card) ─────────────────────────────────── */
+.steel-inner {
+  background: rgba(160, 180, 210, 0.04);
+  border: 1px solid rgba(90, 105, 130, 0.14);
+}
+
+/* ─── Light mode card equivalents ───────────────────────────────────────────── */
+.light-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-top-color: rgba(0, 0, 0, 0.13);
+  position: relative;
+}
+
+.light-inner {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+/* ─── Steel header bar ───────────────────────────────────────────────────────── */
+.steel-header {
+  background: linear-gradient(180deg, rgba(20, 24, 36, 0.95) 0%, rgba(10, 12, 20, 0.98) 100%);
+  border-bottom: 1px solid var(--steel-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 .font-display {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: -0.03em;
 }
 
 .font-data {
-  font-family: 'DM Mono', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* Ensure 16px minimum for inputs on mobile to prevent iOS zoom */

@@ -69,6 +69,7 @@ export default function Home() {
 
   return (
     <div
+      data-theme={theme}
       className="flex flex-col min-h-screen transition-colors duration-200"
       style={{ background: bgColor, color: textColor }}
     >

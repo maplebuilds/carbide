@@ -3,46 +3,58 @@
 interface CarbideLogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  theme?: 'dark' | 'light';
 }
 
-export default function CarbideLogo({ className = '', size = 'md' }: CarbideLogoProps) {
-  const sizes = {
-    sm: { fontSize: '1.25rem', letterSpacing: '0.15em' },
-    md: { fontSize: '1.75rem', letterSpacing: '0.2em' },
-    lg: { fontSize: '2.5rem', letterSpacing: '0.25em' },
-  };
+export default function CarbideLogo({ className = '', size = 'md', theme = 'dark' }: CarbideLogoProps) {
+  const scales = { sm: 0.42, md: 0.58, lg: 0.85 };
+  const scale = scales[size];
+  const w = Math.round(520 * scale);
+  const h = Math.round(120 * scale);
 
-  const s = sizes[size];
+  // Text and gauge lines change with theme; accents stay blue
+  const inkColor = theme === 'dark' ? '#F2F3F5' : '#1a1a1a';
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {/* SVG C with diagonal cut */}
-      <svg
-        width={size === 'sm' ? 28 : size === 'md' ? 36 : 52}
-        height={size === 'sm' ? 28 : size === 'md' ? 36 : 52}
-        viewBox="0 0 52 52"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* C shape using arc path */}
-        <path
-          d="M42 14 C36 7, 16 7, 10 20 C4 33, 10 46, 22 48 C30 49, 38 45, 42 40"
-          stroke="#FF5E00"
-          strokeWidth="7"
-          strokeLinecap="round"
-          fill="none"
-        />
-        {/* Diagonal cut line */}
-        <line x1="38" y1="6" x2="28" y2="46" stroke="#FF5E00" strokeWidth="3" strokeLinecap="round" opacity="0.6" />
-      </svg>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 520 120"
+      width={w}
+      height={h}
+      fill="none"
+      className={className}
+      aria-label="Carbide"
+    >
+      {/* Speedometer mark */}
+      <g stroke={inkColor}>
+        <line x1="12" y1="70" x2="22" y2="70" strokeWidth="3"/>
+        <line x1="16.95" y1="54.15" x2="25.46" y2="58.94" strokeWidth="1.5"/>
+        <line x1="27.82" y1="41.41" x2="34.82" y2="48.41" strokeWidth="1.5"/>
+        <line x1="42.79" y1="33.01" x2="47.57" y2="41.52" strokeWidth="1.5"/>
+        <line x1="60" y1="22" x2="60" y2="32" strokeWidth="3"/>
+        <line x1="77.21" y1="33.01" x2="72.43" y2="41.52" strokeWidth="1.5"/>
+        <line x1="92.18" y1="41.41" x2="85.18" y2="48.41" strokeWidth="1.5"/>
+        <line x1="103.05" y1="54.15" x2="94.54" y2="58.94" strokeWidth="1.5"/>
+        <line x1="108" y1="70" x2="98" y2="70" strokeWidth="3"/>
+      </g>
+      <g transform="rotate(-32 60 70)">
+        <path d="M60 66.5 L102 66.5 L110 70 L102 73.5 L60 73.5 Z" fill="#00B4FF"/>
+        <rect x="72" y="69" width="20" height="2" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'}/>
+      </g>
+      <circle cx="60" cy="70" r="4.5" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'} stroke="#00B4FF" strokeWidth="2.5"/>
 
-      {/* Wordmark */}
-      <span
-        className="font-black uppercase text-inherit"
-        style={{ fontSize: s.fontSize, letterSpacing: s.letterSpacing }}
-      >
-        CARBIDE
-      </span>
-    </div>
+      {/* Wordmark — "carb" + "i" pin + "de" */}
+      <g fontFamily="'JetBrains Mono', ui-monospace, monospace" fontWeight="600" fontSize="72" fill={inkColor} letterSpacing="-1.5">
+        <text x="140" y="82">carb</text>
+        <text x="342" y="82">de</text>
+      </g>
+
+      {/* "i" replaced by fuel-gauge pin */}
+      <g transform="translate(311 28)">
+        <circle cx="9" cy="7" r="6" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'} stroke="#00B4FF" strokeWidth="3"/>
+        <path d="M4 18 L14 18 L14 46 L9 54 L4 46 Z" fill="#00B4FF"/>
+        <rect x="6" y="26" width="6" height="10" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'}/>
+      </g>
+    </svg>
   );
 }

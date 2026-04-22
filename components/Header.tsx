@@ -14,7 +14,7 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
       theme === 'dark' ? 'bg-[#0e0e10] border-white/10' : 'bg-[#F5F5F5] border-black/10'
     }`}>
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-        <CarbideLogo size="sm" className={theme === 'dark' ? 'text-white' : 'text-[#1a1a1a]'} />
+        <CarbideLogo size="sm" theme={theme} />
 
         <button
           onClick={onToggleTheme}

@@ -75,7 +75,7 @@ function SelectCar({ label, value, onChange, history, exclude, theme }: {
           onClick={() => setOpen(o => !o)}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm text-left transition-colors ${
             open
-              ? 'border-[#FF5E00]/60 ' + (isDark ? 'bg-white/[0.05]' : 'bg-black/[0.05]')
+              ? 'border-[#00B4FF]/60 ' + (isDark ? 'bg-white/[0.05]' : 'bg-black/[0.05]')
               : isDark ? 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.15]' : 'bg-black/[0.04] border-black/[0.08] hover:border-black/[0.15]'
           }`}
         >
@@ -96,12 +96,12 @@ function SelectCar({ label, value, onChange, history, exclude, theme }: {
                 onClick={() => { onChange(h.vin); setOpen(false); }}
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-colors ${
                   h.vin === value
-                    ? 'bg-[#FF5E00]/10 text-[#FF5E00]'
+                    ? 'bg-[#00B4FF]/10 text-[#00B4FF]'
                     : isDark ? 'text-white/80 hover:bg-white/[0.06]' : 'text-[#0e0e10] hover:bg-black/[0.04]'
                 }`}
               >
                 <span>{h.year} {h.make} {h.model}{h.trim ? ' ' + h.trim : ''}</span>
-                {h.vin === value && <Check size={13} className="flex-shrink-0 text-[#FF5E00]" />}
+                {h.vin === value && <Check size={13} className="flex-shrink-0 text-[#00B4FF]" />}
               </button>
             ))}
           </div>
@@ -131,7 +131,7 @@ function CostRow({ label, value, highlight, theme }: { label: string; value: str
   return (
     <div className={`flex justify-between items-baseline py-2 border-b last:border-0 ${isDark ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
       <span className={`text-[12px] ${highlight ? (isDark ? 'text-white font-medium' : 'text-[#0e0e10] font-medium') : (isDark ? 'text-white/45' : 'text-black/45')}`}>{label}</span>
-      <span className={`font-data text-[12px] font-medium ${highlight ? 'text-[#FF5E00]' : isDark ? 'text-white' : 'text-[#0e0e10]'}`}>{value}</span>
+      <span className={`font-data text-[12px] font-medium ${highlight ? 'text-[#00B4FF]' : isDark ? 'text-white' : 'text-[#0e0e10]'}`}>{value}</span>
     </div>
   );
 }
@@ -230,10 +230,13 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
               {car.year} {car.make}
             </p>
             <p className="font-display text-[22px] leading-tight" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
-              {car.model}{car.trim ? <em className="text-[#FF5E00] not-italic"> {car.trim}</em> : null}
+              {car.model}{car.trim ? <em className="text-[#00B4FF] not-italic"> {car.trim}</em> : null}
             </p>
             <p className={`font-data text-[11px] mt-1 ${isDark ? 'text-white/25' : 'text-black/25'}`}>
               Market: {r.purchasePriceContext.fairMarketLow} – {r.purchasePriceContext.fairMarketHigh}
+            </p>
+            <p className={`font-data text-[10px] mt-0.5 tracking-wider ${isDark ? 'text-white/15' : 'text-black/15'}`}>
+              {car.vin}
             </p>
           </div>
           {badge && dealerPrice && (
@@ -259,13 +262,13 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
               value={dealerPriceInput}
               onChange={(e) => { setDealerPriceInput(e.target.value.replace(/[^0-9,]/g, '')); if (dealerPrice !== null) setDealerPrice(null); }}
               onKeyDown={(e) => { if (e.key === 'Enter') analyzePrice(); }}
-              className={`w-full pl-6 pr-3 py-2 rounded-lg font-data text-xs border outline-none focus:border-[#FF5E00] transition-colors ${isDark ? 'bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20' : 'bg-black/[0.04] border-black/[0.08] text-[#0e0e10] placeholder:text-black/25'}`}
+              className={`w-full pl-6 pr-3 py-2 rounded-lg font-data text-xs border outline-none focus:border-[#00B4FF] transition-colors ${isDark ? 'bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20' : 'bg-black/[0.04] border-black/[0.08] text-[#0e0e10] placeholder:text-black/25'}`}
             />
           </div>
           <button
             onClick={analyzePrice}
             disabled={!dealerPriceInput.trim()}
-            className="px-3 py-2 rounded-lg bg-[#FF5E00] text-white font-data text-[10px] uppercase tracking-wider hover:bg-[#e55400] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+            className="px-3 py-2 rounded-lg bg-[#00B4FF] text-white font-data text-[10px] uppercase tracking-wider hover:bg-[#0099e0] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
           >
             Analyze
           </button>
@@ -278,15 +281,15 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
           { label: dealerPrice ? 'Monthly (your price)' : 'Monthly (60mo)', value: monthly60 + '/mo' },
           { label: '3-Year TCO', value: r.totalCostOfOwnership.year3Total },
         ].map(item => (
-          <div key={item.label} className={`rounded-lg p-3 ${isDark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-black/[0.04] border border-black/[0.06]'}`}>
+          <div key={item.label} className={`rounded-lg p-3 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 ${isDark ? 'text-white/30' : 'text-black/30'}`}>{item.label}</p>
-            <p className="font-data text-base font-medium text-[#FF5E00]">{item.value}</p>
+            <p className="font-data text-base font-medium text-[#00B4FF]">{item.value}</p>
           </div>
         ))}
       </div>
 
       {/* Cost breakdown */}
-      <div className={`rounded-lg border p-4 mb-4 ${isDark ? 'border-white/[0.07] bg-white/[0.02]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+      <div className={`rounded-lg p-4 mb-4 ${isDark ? 'steel-card' : 'light-card'}`}>
         <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-3 ${isDark ? 'text-white/25' : 'text-black/25'}`}>Cost Breakdown</p>
         {dealerPrice && <CostRow label="Dealer asking price" value={'$' + dealerPrice.toLocaleString()} theme={theme} />}
         <CostRow label="Monthly payment (good credit, 60mo)" value={monthly60 + '/mo'} theme={theme} />
@@ -303,21 +306,21 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
         {relRank >= 4 && <Flag type="green" theme={theme}><strong>Reliability:</strong> {reliabilityShort(r.maintenanceReliability.reliabilityRating)}</Flag>}
         {issues.map((issue, i) => <Flag key={i} type={relRank <= 2 ? 'red' : 'yellow'} theme={theme}>{issue}</Flag>)}
         <Flag type="red" theme={theme}><strong>Major risk:</strong> {r.maintenanceReliability.majorRisks}</Flag>
-        <Flag type="yellow" theme={theme}><strong>Watch out:</strong> {r.bottomLine.watchOut}</Flag>
+        {r.bottomLine.watchOut && <Flag type="yellow" theme={theme}><strong>Watch out:</strong> {r.bottomLine.watchOut}</Flag>}
       </div>
 
       {/* Key Features */}
-      <div className={`rounded-lg border p-4 ${isDark ? 'border-white/[0.07] bg-white/[0.02]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+      <div className={`rounded-lg p-4 ${isDark ? 'steel-card' : 'light-card'}`}>
         <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-3 ${isDark ? 'text-white/25' : 'text-black/25'}`}>Key Features</p>
         {features ? (
           <div className="space-y-3">
             {features.tech && features.tech.length > 0 && (
               <div>
-                <p className="font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 text-[#FF5E00]">Tech</p>
+                <p className="font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 text-[#00B4FF]">Tech</p>
                 <ul className="space-y-1">
                   {features.tech.map((f, i) => (
                     <li key={i} className={`flex items-start gap-2 text-[12px] ${isDark ? 'text-white/60' : 'text-black/60'}`}>
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-[#00B4FF] flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -326,11 +329,11 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
             )}
             {features.sport && features.sport.length > 0 && (
               <div>
-                <p className="font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 text-[#FF5E00]">Sport</p>
+                <p className="font-data text-[10px] uppercase tracking-[0.08em] mb-1.5 text-[#00B4FF]">Sport</p>
                 <ul className="space-y-1">
                   {features.sport.map((f, i) => (
                     <li key={i} className={`flex items-start gap-2 text-[12px] ${isDark ? 'text-white/60' : 'text-black/60'}`}>
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-[#00B4FF] flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -356,8 +359,8 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
                   : featuresError
                     ? 'border-red-400/40 text-red-400/70 hover:border-red-400/70 hover:text-red-400'
                     : isDark
-                      ? 'border-white/[0.1] text-white/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
-                      : 'border-black/[0.1] text-black/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
+                      ? 'border-white/[0.1] text-white/40 hover:border-[#00B4FF]/60 hover:text-[#00B4FF] hover:bg-[#00B4FF]/[0.04]'
+                      : 'border-black/[0.1] text-black/40 hover:border-[#00B4FF]/60 hover:text-[#00B4FF] hover:bg-[#00B4FF]/[0.04]'
               }`}
             >
               {featuresLoading ? (
@@ -418,16 +421,53 @@ function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem
   ];
 
   return (
-    <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+    <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
       <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-4 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Head-to-Head</p>
-      <div className="space-y-1">
-        {metrics.map(m => (
-          <div key={m.label} className="grid grid-cols-[1fr_64px_1fr] gap-2 items-center py-1.5">
-            <p className={`text-[12px] font-data text-right ${m.aWins ? (isDark ? 'text-white font-medium' : 'text-[#0e0e10] font-medium') : (isDark ? 'text-white/35' : 'text-black/35')}`}>
+      <div>
+        {metrics.map((m, i) => (
+          <div
+            key={m.label}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 80px 1fr',
+              alignItems: 'center',
+              padding: '8px 4px',
+              borderTop: i > 0 ? `1px solid ${isDark ? 'rgba(90,105,130,0.14)' : 'rgba(0,0,0,0.07)'}` : undefined,
+            }}
+          >
+            <p
+              className="font-data"
+              style={{
+                fontSize: 13,
+                textAlign: 'right',
+                paddingRight: 16,
+                color: m.aWins ? '#00B4FF' : isDark ? 'rgba(216,221,232,0.50)' : 'rgba(0,0,0,0.50)',
+                fontWeight: m.aWins ? 600 : 400,
+              }}
+            >
               {m.aVal}{m.aWins ? ' ✓' : ''}
             </p>
-            <p className={`font-data text-[9px] uppercase tracking-[0.1em] text-center ${isDark ? 'text-white/25' : 'text-black/25'}`}>{m.label}</p>
-            <p className={`text-[12px] font-data ${m.bWins ? (isDark ? 'text-white font-medium' : 'text-[#0e0e10] font-medium') : (isDark ? 'text-white/35' : 'text-black/35')}`}>
+            <p
+              className="font-data"
+              style={{
+                fontSize: 9,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                textAlign: 'center',
+                color: isDark ? 'rgba(216,221,232,0.32)' : 'rgba(0,0,0,0.38)',
+              }}
+            >
+              {m.label}
+            </p>
+            <p
+              className="font-data"
+              style={{
+                fontSize: 13,
+                paddingLeft: 16,
+                color: m.bWins ? '#00B4FF' : isDark ? 'rgba(216,221,232,0.50)' : 'rgba(0,0,0,0.50)',
+                fontWeight: m.bWins ? 600 : 400,
+              }}
+            >
               {m.bWins ? '✓ ' : ''}{m.bVal}
             </p>
           </div>
@@ -451,7 +491,7 @@ function Verdict({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; 
   const reliabilityWinner = relA > relB ? carA : relB > relA ? carB : null;
 
   return (
-    <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+    <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
       <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-1 ${isDark ? 'text-white/30' : 'text-black/30'}`}>The Verdict</p>
       <p className={`text-sm mb-5 ${isDark ? 'text-white/45' : 'text-black/45'}`}>
         The {costWinner.year} {costWinner.make} {costWinner.model} costs{' '}
@@ -465,22 +505,30 @@ function Verdict({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; 
           <p className="font-data text-[10px] uppercase tracking-[0.1em] text-green-400 mb-1">If You're Optimizing Cost</p>
           <p className="font-display text-[16px] mb-2" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
             {costWinner.year} {costWinner.make} {costWinner.model}
-            {costWinner.trim ? <em className="text-[#FF5E00] not-italic"> {costWinner.trim}</em> : null}
+            {costWinner.trim ? <em className="text-[#00B4FF] not-italic"> {costWinner.trim}</em> : null}
           </p>
           <p className={`text-[12px] leading-relaxed ${isDark ? 'text-white/60' : 'text-black/60'}`}>{costWinner.report.bottomLine.verdict}</p>
         </div>
 
-        {/* Experience pick (if different from cost winner) */}
-        {(costLoser.report.bottomLine.smartBuy || relA === relB) && (
-          <div className="rounded-lg border p-4" style={{ borderColor: 'rgba(255,94,0,0.25)', background: 'rgba(255,94,0,0.03)' }}>
-            <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#FF5E00] mb-1">If Experience Matters More</p>
-            <p className="font-display text-[16px] mb-2" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
-              {costLoser.year} {costLoser.make} {costLoser.model}
-              {costLoser.trim ? <em className="text-[#FF5E00] not-italic"> {costLoser.trim}</em> : null}
-            </p>
-            <p className={`text-[12px] leading-relaxed ${isDark ? 'text-white/60' : 'text-black/60'}`}>{costLoser.report.bottomLine.verdict}</p>
-          </div>
-        )}
+        {/* Experience pick — always show the other car */}
+        {(() => {
+          const expPick = reliabilityWinner && reliabilityWinner.vin !== costWinner.vin
+            ? reliabilityWinner
+            : costLoser;
+          const label = reliabilityWinner && reliabilityWinner.vin !== costWinner.vin
+            ? 'If Experience Matters More'
+            : 'If You Want the Premium Option';
+          return (
+            <div className="rounded-lg border p-4" style={{ borderColor: 'rgba(0,180,255,0.25)', background: 'rgba(0,180,255,0.03)' }}>
+              <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-1">{label}</p>
+              <p className="font-display text-[16px] mb-2" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
+                {expPick.year} {expPick.make} {expPick.model}
+                {expPick.trim ? <em className="text-[#00B4FF] not-italic"> {expPick.trim}</em> : null}
+              </p>
+              <p className={`text-[12px] leading-relaxed ${isDark ? 'text-white/60' : 'text-black/60'}`}>{expPick.report.bottomLine.verdict}</p>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Caveat */}
@@ -538,17 +586,17 @@ export default function CompareTab({ history, theme }: CompareTabProps) {
           </div>
 
           {/* Car A */}
-          <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
-            <CarSection car={carA} theme={theme} />
+          <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
+            <CarSection key={carA.vin} car={carA} theme={theme} />
           </div>
 
           {/* Car B */}
-          <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
-            <CarSection car={carB} theme={theme} />
+          <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
+            <CarSection key={carB.vin} car={carB} theme={theme} />
           </div>
         </>
       ) : (
-        <div className={`rounded-xl border p-10 text-center ${isDark ? 'border-white/[0.07]' : 'border-black/[0.07]'}`}>
+        <div className={`rounded-xl p-10 text-center ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`text-sm ${isDark ? 'text-white/25' : 'text-black/25'}`}>Select two vehicles above to compare them.</p>
         </div>
       )}

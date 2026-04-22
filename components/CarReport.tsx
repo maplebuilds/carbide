@@ -98,7 +98,7 @@ function CostRow({ label, value, highlight, theme }: { label: string; value: str
   return (
     <div className={`flex justify-between items-baseline py-2.5 border-b last:border-0 ${isDark ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
       <span className={`text-sm ${highlight ? (isDark ? 'text-white font-medium' : 'text-[#0e0e10] font-medium') : (isDark ? 'text-white/50' : 'text-black/50')}`}>{label}</span>
-      <span className={`font-data text-sm font-medium ${highlight ? 'text-[#FF5E00]' : isDark ? 'text-white' : 'text-[#0e0e10]'}`}>{value}</span>
+      <span className={`font-data text-sm font-medium ${highlight ? 'text-[#00B4FF]' : isDark ? 'text-white' : 'text-[#0e0e10]'}`}>{value}</span>
     </div>
   );
 }
@@ -106,7 +106,7 @@ function CostRow({ label, value, highlight, theme }: { label: string; value: str
 function Section({ label, children, theme }: { label: string; children: React.ReactNode; theme: 'dark' | 'light' }) {
   const isDark = theme === 'dark';
   return (
-    <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+    <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
       <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-4 ${isDark ? 'text-white/30' : 'text-black/30'}`}>{label}</p>
       {children}
     </div>
@@ -118,7 +118,7 @@ function Stat({ label, value, accent, dim, theme }: { label: string; value: stri
   return (
     <div>
       <p className={`font-data text-[10px] uppercase tracking-[0.08em] mb-1 ${isDark ? 'text-white/30' : 'text-black/30'}`}>{label}</p>
-      <p className={`font-data text-lg font-medium ${accent ? 'text-[#FF5E00]' : dim ? (isDark ? 'text-white/50' : 'text-black/50') : isDark ? 'text-white' : 'text-[#0e0e10]'}`}>
+      <p className={`font-data text-lg font-medium ${accent ? 'text-[#00B4FF]' : dim ? (isDark ? 'text-white/50' : 'text-black/50') : isDark ? 'text-white' : 'text-[#0e0e10]'}`}>
         {value}
       </p>
     </div>
@@ -141,8 +141,8 @@ function AnalyzeButton({ onClick, loading, error, theme }: { onClick: () => void
             : error
               ? 'border-red-400/40 text-red-400/70 hover:border-red-400/70 hover:text-red-400'
               : isDark
-                ? 'border-white/[0.1] text-white/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
-                : 'border-black/[0.1] text-black/40 hover:border-[#FF5E00]/60 hover:text-[#FF5E00] hover:bg-[#FF5E00]/[0.04]'
+                ? 'border-white/[0.1] text-white/40 hover:border-[#00B4FF]/60 hover:text-[#00B4FF] hover:bg-[#00B4FF]/[0.04]'
+                : 'border-black/[0.1] text-black/40 hover:border-[#00B4FF]/60 hover:text-[#00B4FF] hover:bg-[#00B4FF]/[0.04]'
         }`}
       >
         {loading ? (
@@ -160,7 +160,7 @@ function AffiliateCTA({ label, href, theme, trackingId }: { label: string; href:
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       onClick={() => console.log(`[Carbide CTA Click] id=${trackingId}`)}
-      className="flex items-center justify-center gap-2 w-full py-2.5 px-4 mt-4 rounded-lg border border-[#FF5E00]/50 text-[#FF5E00] font-data text-xs uppercase tracking-wider hover:bg-[#FF5E00] hover:text-white transition-all active:scale-95"
+      className="flex items-center justify-center gap-2 w-full py-2.5 px-4 mt-4 rounded-lg border border-[#00B4FF]/50 text-[#00B4FF] font-data text-xs uppercase tracking-wider hover:bg-[#00B4FF] hover:text-white transition-all active:scale-95"
     >
       {label} <ExternalLink size={12} />
     </a>
@@ -310,13 +310,13 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
       <div className="relative z-10 space-y-4">
 
         {/* ── Vehicle header ── */}
-        <div className={`rounded-xl border-2 border-[#FF5E00] px-5 py-5 ${isDark ? 'bg-[#FF5E00]/[0.04]' : 'bg-[#FF5E00]/[0.04]'}`}>
-          <p className="font-data text-[10px] text-[#FF5E00] uppercase tracking-[0.15em] mb-1">
+        <div className={`rounded-xl border-2 border-[#00B4FF] px-5 py-5 ${isDark ? 'bg-[#00B4FF]/[0.04]' : 'bg-[#00B4FF]/[0.04]'}`}>
+          <p className="font-data text-[10px] text-[#00B4FF] uppercase tracking-[0.15em] mb-1">
             {vehicle.year} · {vehicle.make}
           </p>
           <h1 className="font-display text-[26px] leading-tight" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
             {vehicle.model}
-            {vehicle.trim && <em className="text-[#FF5E00] not-italic"> {vehicle.trim}</em>}
+            {vehicle.trim && <em className="text-[#00B4FF] not-italic"> {vehicle.trim}</em>}
           </h1>
           <p className={`font-data text-[11px] mt-1.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>
             Market: {report.purchasePriceContext.fairMarketLow} – {report.purchasePriceContext.fairMarketHigh}
@@ -337,7 +337,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </div>
 
         {/* ── Dealer price + deal badge ── */}
-        <div className={`rounded-xl border p-4 ${isDark ? 'bg-white/[0.025] border-white/[0.07]' : 'bg-black/[0.025] border-black/[0.07]'}`}>
+        <div className={`rounded-xl p-4 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
             Analyze Your Deal — Optional
           </p>
@@ -357,7 +357,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                     if (p > 0) { setAnalyzedDealerPrice(p); saveDealerPrice(vehicle.vin, p); }
                   }
                 }}
-                className={`w-full pl-7 pr-4 py-2.5 rounded-lg font-data text-sm border outline-none focus:border-[#FF5E00] transition-colors ${
+                className={`w-full pl-7 pr-4 py-2.5 rounded-lg font-data text-sm border outline-none focus:border-[#00B4FF] transition-colors ${
                   isDark ? 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20'
                          : 'bg-white border-black/15 text-[#0e0e10] placeholder:text-black/25'}`}
               />
@@ -368,7 +368,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                 if (p > 0) { setAnalyzedDealerPrice(p); saveDealerPrice(vehicle.vin, p); }
               }}
               disabled={parseDollar(dealerPriceInput) <= 0}
-              className="px-4 py-2.5 rounded-lg bg-[#FF5E00] text-white font-data text-xs uppercase tracking-wider hover:bg-[#e55400] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+              className="px-4 py-2.5 rounded-lg bg-[#00B4FF] text-white font-data text-xs uppercase tracking-wider hover:bg-[#0099e0] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
               Analyze
             </button>
@@ -389,18 +389,18 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
 
         {/* ── Quick stats ── */}
         <div className="grid grid-cols-2 gap-2.5">
-          <div className={`rounded-xl p-4 ${isDark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-black/[0.04] border border-black/[0.06]'}`}>
+          <div className={`rounded-xl p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
               {analyzedDealerPrice ? 'Monthly (your price)' : 'Monthly Payment'}
             </p>
-            <p className="font-data text-[22px] font-medium leading-none text-[#FF5E00]">
+            <p className="font-data text-[22px] font-medium leading-none text-[#00B4FF]">
               {monthly60}<span className={`text-xs ml-1 ${isDark ? 'text-white/30' : 'text-black/30'}`}>/mo</span>
             </p>
             <p className={`text-[11px] mt-1.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>good credit · 60 months</p>
           </div>
-          <div className={`rounded-xl p-4 ${isDark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-black/[0.04] border border-black/[0.06]'}`}>
+          <div className={`rounded-xl p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 ${isDark ? 'text-white/30' : 'text-black/30'}`}>3-Year TCO</p>
-            <p className="font-data text-[22px] font-medium leading-none text-[#FF5E00]">
+            <p className="font-data text-[22px] font-medium leading-none text-[#00B4FF]">
               {analyzedDealerPrice
                 ? formatDollar(parseDollar(report.totalCostOfOwnership.year3Total) + tcoMidpointDelta)
                 : report.totalCostOfOwnership.year3Total}
@@ -410,7 +410,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </div>
 
         {/* ── Cost breakdown ── */}
-        <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+        <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Cost Breakdown</p>
           {analyzedDealerPrice !== null && (
             <CostRow label="Dealer asking price" value={formatDollar(analyzedDealerPrice)} theme={theme} />
@@ -440,7 +440,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </div>
 
         {/* ── Flags ── */}
-        <div className={`rounded-xl border p-5 ${isDark ? 'border-white/[0.07] bg-white/[0.025]' : 'border-black/[0.07] bg-black/[0.02]'}`}>
+        <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Flags</p>
           {relIsGood && <Flag type="green" theme={theme}><strong>Reliability:</strong> {relShort}</Flag>}
           {knownIssueLines.map((issue, i) => <Flag key={i} type="yellow" theme={theme}>{issue}</Flag>)}
@@ -470,12 +470,12 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             const fc72 = p ? calcMonthlyPayment(p, 11,  72)  : report.financingEstimate.monthlyFairCredit72;
             return (
               <div className="grid grid-cols-2 gap-2.5">
-                <div className={`rounded-lg p-3 ${isDark ? 'bg-white/[0.04]' : 'bg-black/[0.04]'}`}>
+                <div className={`rounded-lg p-3 ${isDark ? 'steel-inner' : 'light-inner'}`}>
                   <p className={`font-data text-[10px] uppercase tracking-[0.08em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Good Credit (720+)</p>
                   <Stat label="60 months" value={gc60 + '/mo'} accent theme={theme} />
                   <div className="mt-2"><Stat label="72 months" value={gc72 + '/mo'} theme={theme} /></div>
                 </div>
-                <div className={`rounded-lg p-3 ${isDark ? 'bg-white/[0.04]' : 'bg-black/[0.04]'}`}>
+                <div className={`rounded-lg p-3 ${isDark ? 'steel-inner' : 'light-inner'}`}>
                   <p className={`font-data text-[10px] uppercase tracking-[0.08em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Fair Credit (620–719)</p>
                   <Stat label="60 months" value={fc60 + '/mo'} accent theme={theme} />
                   <div className="mt-2"><Stat label="72 months" value={fc72 + '/mo'} theme={theme} /></div>
@@ -536,11 +536,11 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             <div className="space-y-4">
               {sectionData.features.tech && sectionData.features.tech.length > 0 && (
                 <div>
-                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#FF5E00]`}>Tech</p>
+                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#00B4FF]`}>Tech</p>
                   <ul className="space-y-1.5">
                     {sectionData.features.tech.map((f, i) => (
                       <li key={i} className={`flex items-start gap-2 text-sm ${isDark ? 'text-white/65' : 'text-black/65'}`}>
-                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#00B4FF] flex-shrink-0" />
                         {f}
                       </li>
                     ))}
@@ -549,11 +549,11 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               )}
               {sectionData.features.sport && sectionData.features.sport.length > 0 && (
                 <div>
-                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#FF5E00]`}>Sport</p>
+                  <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#00B4FF]`}>Sport</p>
                   <ul className="space-y-1.5">
                     {sectionData.features.sport.map((f, i) => (
                       <li key={i} className={`flex items-start gap-2 text-sm ${isDark ? 'text-white/65' : 'text-black/65'}`}>
-                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#FF5E00] flex-shrink-0" />
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#00B4FF] flex-shrink-0" />
                         {f}
                       </li>
                     ))}
@@ -573,10 +573,10 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </Section>
 
         {/* The Verdict */}
-        <div className={`rounded-xl border-2 p-5 ${report.bottomLine.smartBuy ? 'border-[#FF5E00]/40 bg-[#FF5E00]/[0.03]' : 'border-red-500/40 bg-red-500/[0.03]'}`}>
+        <div className={`rounded-xl border-2 p-5 ${report.bottomLine.smartBuy ? 'border-[#00B4FF]/40 bg-[#00B4FF]/[0.03]' : 'border-red-500/40 bg-red-500/[0.03]'}`}>
           <div className="flex items-center gap-2.5 mb-4">
             {report.bottomLine.smartBuy
-              ? <CheckCircle size={18} className="text-[#FF5E00] flex-shrink-0" />
+              ? <CheckCircle size={18} className="text-[#00B4FF] flex-shrink-0" />
               : <XCircle size={18} className="text-red-400 flex-shrink-0" />}
             <p className={`font-data text-[10px] uppercase tracking-[0.12em] ${isDark ? 'text-white/30' : 'text-black/30'}`}>The Verdict</p>
           </div>
@@ -587,12 +587,12 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               )}
               <p className={`text-sm leading-relaxed mb-5 ${isDark ? 'text-white/85' : 'text-black/85'}`}>{sectionData.verdict.verdict}</p>
               <div className="grid sm:grid-cols-2 gap-3">
-                <div className={`rounded-lg p-4 ${isDark ? 'bg-white/[0.04]' : 'bg-black/[0.04]'}`}>
-                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#FF5E00] mb-2">Watch Out For</p>
+                <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
+                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Watch Out For</p>
                   <p className={`text-sm leading-relaxed ${isDark ? 'text-white/65' : 'text-black/65'}`}>{sectionData.verdict.watchOut}</p>
                 </div>
-                <div className={`rounded-lg p-4 ${isDark ? 'bg-white/[0.04]' : 'bg-black/[0.04]'}`}>
-                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#FF5E00] mb-2">Ask The Dealer</p>
+                <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
+                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Ask The Dealer</p>
                   <p className={`text-sm leading-relaxed whitespace-pre-line ${isDark ? 'text-white/65' : 'text-black/65'}`}>{sectionData.verdict.askDealer}</p>
                 </div>
               </div>

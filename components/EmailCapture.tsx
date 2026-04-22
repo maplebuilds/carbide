@@ -27,7 +27,7 @@ export default function EmailCapture({ theme, vehicle }: EmailCaptureProps) {
   if (submitted) {
     return (
       <div className={`rounded-xl border p-5 flex items-center gap-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}>
-        <Check size={20} className="text-[#FF5E00] flex-shrink-0" />
+        <Check size={20} className="text-[#00B4FF] flex-shrink-0" />
         <p className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>
           Got it. We&apos;ll send your {vehicle.year} {vehicle.make} {vehicle.model} report to {email}.
         </p>
@@ -54,8 +54,8 @@ export default function EmailCapture({ theme, vehicle }: EmailCaptureProps) {
           placeholder="you@example.com"
           className={`flex-1 px-4 py-3 rounded-lg text-sm border outline-none transition-colors min-w-0 ${
             isDark
-              ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#FF5E00]/60'
-              : 'bg-black/5 border-black/10 text-[#1a1a1a] placeholder:text-black/30 focus:border-[#FF5E00]/60'
+              ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#00B4FF]/60'
+              : 'bg-black/5 border-black/10 text-[#1a1a1a] placeholder:text-black/30 focus:border-[#00B4FF]/60'
           }`}
         />
         <button
@@ -63,7 +63,7 @@ export default function EmailCapture({ theme, vehicle }: EmailCaptureProps) {
           disabled={!email.includes('@')}
           className={`px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${
             email.includes('@')
-              ? 'bg-[#FF5E00]/20 text-[#FF5E00] border border-[#FF5E00]/40 hover:bg-[#FF5E00]/30'
+              ? 'bg-[#00B4FF]/20 text-[#00B4FF] border border-[#00B4FF]/40 hover:bg-[#00B4FF]/30'
               : isDark
               ? 'bg-white/5 text-white/20 border border-white/10 cursor-not-allowed'
               : 'bg-black/5 text-black/20 border border-black/10 cursor-not-allowed'

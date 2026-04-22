@@ -26,9 +26,10 @@ export default function NavTabs({ activeTab, onTabChange, theme }: NavTabsProps)
             <button
               key={id}
               onClick={() => onTabChange(id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wider border-b-2 transition-all min-w-0 flex-1 justify-center ${
+              style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}
+              className={`flex items-center gap-2 px-4 py-3 text-sm uppercase tracking-wider border-b-2 transition-all min-w-0 flex-1 justify-center ${
                 isActive
-                  ? 'border-[#FF5E00] text-[#FF5E00]'
+                  ? 'border-[#00B4FF] text-[#00B4FF]'
                   : theme === 'dark'
                   ? 'border-transparent text-white/40 hover:text-white/70'
                   : 'border-transparent text-black/40 hover:text-black/70'

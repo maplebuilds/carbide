@@ -29,11 +29,12 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
       {/* Hero text */}
       <div className="text-center mb-8">
         <h1
-          className={`font-display text-4xl sm:text-6xl tracking-tight mb-3 ${
+          className={`text-4xl sm:text-6xl mb-3 ${
             theme === 'dark' ? 'text-white' : 'text-[#1a1a1a]'
           }`}
+          style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600, letterSpacing: '-0.03em' }}
         >
-          Know Before You Drive Off
+          Cut Through the BS.
         </h1>
         <p className={`text-base sm:text-lg ${theme === 'dark' ? 'text-white/50' : 'text-black/50'}`}>
           Enter a VIN number to get the full ownership cost breakdown — free, instant, no signup.
@@ -46,8 +47,8 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
           error
             ? 'border-red-500/60'
             : theme === 'dark'
-            ? 'border-white/10 bg-white/5 focus-within:border-[#FF5E00]/60'
-            : 'border-black/10 bg-black/5 focus-within:border-[#FF5E00]/60'
+            ? 'border-white/10 bg-white/5 focus-within:border-[#00B4FF]/60'
+            : 'border-black/10 bg-black/5 focus-within:border-[#00B4FF]/60'
         }`}>
           <input
             type="text"
@@ -68,7 +69,7 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
             disabled={!isValid || loading}
             className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-bold uppercase tracking-wider text-sm transition-all ${
               isValid && !loading
-                ? 'bg-[#FF5E00] text-white hover:bg-[#e05400] active:scale-95'
+                ? 'bg-[#00B4FF] text-white hover:bg-[#0099e0] active:scale-95'
                 : theme === 'dark'
                 ? 'bg-white/10 text-white/30 cursor-not-allowed'
                 : 'bg-black/10 text-black/30 cursor-not-allowed'
@@ -86,7 +87,7 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
           </p>
           <p className={`text-xs font-mono ${
             cleaned.length === 17
-              ? 'text-[#FF5E00]'
+              ? 'text-[#00B4FF]'
               : theme === 'dark'
               ? 'text-white/30'
               : 'text-black/30'

@@ -47,7 +47,7 @@ export default function HistoryTab({ history, theme, onSelect, onClear }: Histor
           <button
             key={item.vin}
             onClick={() => onSelect(item)}
-            className={`w-full text-left rounded-xl border p-4 transition-all hover:border-[#FF5E00]/40 group ${
+            className={`w-full text-left rounded-xl border p-4 transition-all hover:border-[#00B4FF]/40 group ${
               isDark ? 'border-white/10 bg-white/3 hover:bg-white/5' : 'border-black/10 bg-black/2 hover:bg-black/5'
             }`}
           >
@@ -55,7 +55,7 @@ export default function HistoryTab({ history, theme, onSelect, onClear }: Histor
               <div className="min-w-0">
                 <p className={`font-bold text-base truncate ${isDark ? 'text-white' : 'text-[#1a1a1a]'}`}>
                   {item.year} {item.make} {item.model}
-                  {item.trim && <span className="text-[#FF5E00] ml-1 font-normal">{item.trim}</span>}
+                  {item.trim && <span className="text-[#00B4FF] ml-1 font-normal">{item.trim}</span>}
                 </p>
                 <p className={`text-xs font-mono mt-0.5 truncate ${isDark ? 'text-white/30' : 'text-black/30'}`}>
                   {item.vin}
@@ -64,7 +64,7 @@ export default function HistoryTab({ history, theme, onSelect, onClear }: Histor
                   Viewed {new Date(item.dateViewed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
-              <ChevronRight size={18} className={`flex-shrink-0 transition-colors ${isDark ? 'text-white/20 group-hover:text-[#FF5E00]' : 'text-black/20 group-hover:text-[#FF5E00]'}`} />
+              <ChevronRight size={18} className={`flex-shrink-0 transition-colors ${isDark ? 'text-white/20 group-hover:text-[#00B4FF]' : 'text-black/20 group-hover:text-[#00B4FF]'}`} />
             </div>
           </button>
         ))}

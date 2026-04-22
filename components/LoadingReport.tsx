@@ -40,8 +40,8 @@ export default function LoadingReport({ theme }: LoadingReportProps) {
     <div className="flex flex-col items-center justify-center py-24 gap-8">
       {/* Spinner */}
       <div className="relative w-16 h-16">
-        <div className="absolute inset-0 rounded-full border-4 border-[#FF5E00]/20"></div>
-        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#FF5E00] animate-spin"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-[#00B4FF]/20"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#00B4FF] animate-spin"></div>
       </div>
 
       {/* Message */}
