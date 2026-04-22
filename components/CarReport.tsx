@@ -10,6 +10,7 @@ interface CarReportProps {
   report: CarReportType;
   vehicle: VehicleData;
   theme: 'dark' | 'light';
+  proseLoading?: boolean;
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
