@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import EmailCapture from './EmailCapture';
 import { CarReport as CarReportType, VehicleData } from '@/lib/types';
-import { getDealerPrice, saveDealerPrice } from '@/lib/storage';
+import { getDealerPrice, saveDealerPrice, getMileage, saveMileage } from '@/lib/storage';
 
 interface CarReportProps {
   report: CarReportType;
@@ -169,7 +169,7 @@ function AffiliateCTA({ label, href, theme, trackingId }: { label: string; href:
 
 // ─── Section analysis state types ────────────────────────────────────────────
 
-type SectionKey = 'purchase' | 'financing' | 'insurance' | 'fuel' | 'depreciation' | 'verdict' | 'features';
+type SectionKey = 'purchase' | 'financing' | 'insurance' | 'fuel' | 'depreciation' | 'verdict' | 'features' | 'maintenance';
 
 interface SectionData {
   analysis?: string;
@@ -182,6 +182,10 @@ interface SectionData {
   tech?: string[];
   sport?: string[];
   trimAdvantage?: string;
+  // maintenance section
+  dueSoon?: string[];
+  upcoming?: string[];
+  criticalNote?: string;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -190,6 +194,8 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [dealerPriceInput, setDealerPriceInput] = useState('');
   const [analyzedDealerPrice, setAnalyzedDealerPrice] = useState<number | null>(null);
+  const [mileageInput, setMileageInput] = useState('');
+  const [actualMileage, setActualMileage] = useState<number | null>(null);
   const [sectionData, setSectionData] = useState<Partial<Record<SectionKey, SectionData>>>({});
   const [sectionLoading, setSectionLoading] = useState<Partial<Record<SectionKey, boolean>>>({});
   const [sectionErrors, setSectionErrors] = useState<Partial<Record<SectionKey, boolean>>>({});
@@ -218,12 +224,17 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
     if (Object.keys(prefilled).length > 0) setSectionData(prefilled);
   }, [report]);
 
-  // Load persisted dealer price
+  // Load persisted dealer price + mileage
   useEffect(() => {
-    const saved = getDealerPrice(vehicle.vin);
-    if (saved) {
-      setDealerPriceInput(saved.toLocaleString());
-      setAnalyzedDealerPrice(saved);
+    const savedPrice = getDealerPrice(vehicle.vin);
+    if (savedPrice) {
+      setDealerPriceInput(savedPrice.toLocaleString());
+      setAnalyzedDealerPrice(savedPrice);
+    }
+    const savedMiles = getMileage(vehicle.vin);
+    if (savedMiles) {
+      setMileageInput(savedMiles.toLocaleString());
+      setActualMileage(savedMiles);
     }
   }, [vehicle.vin]);
 
@@ -244,7 +255,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
       const res = await fetch('/api/enrich-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vehicle, numbers: report, section }),
+        body: JSON.stringify({ vehicle, numbers: report, section, mileage: actualMileage ?? undefined }),
       });
       const data = await res.json();
       if (res.ok && data.prose) {
@@ -267,6 +278,11 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           sport:         prose.keyFeatures?.sport,
           trimAdvantage: prose.keyFeatures?.trimAdvantage,
         };
+        if (section === 'maintenance')  flat = {
+          dueSoon:      prose.maintenance?.dueSoon,
+          upcoming:     prose.maintenance?.upcoming,
+          criticalNote: prose.maintenance?.criticalNote,
+        };
         setSectionData(prev => ({ ...prev, [section]: flat }));
       } else {
         setSectionErrors(prev => ({ ...prev, [section]: true }));
@@ -276,9 +292,15 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
     } finally {
       setSectionLoading(prev => ({ ...prev, [section]: false }));
     }
-  }, [vehicle, report]);
+  }, [vehicle, report, actualMileage]);
 
   const isDark = theme === 'dark';
+  const currentYear = new Date().getFullYear();
+  const vehicleAge = currentYear - parseInt(vehicle.year);
+  const estimatedMiles = vehicleAge * 12500;
+  const displayMileage = actualMileage
+    ? actualMileage.toLocaleString() + ' miles'
+    : '~' + estimatedMiles.toLocaleString() + ' miles est.';
   const marketLow  = parseDollar(report.purchasePriceContext.fairMarketLow);
   const marketHigh = parseDollar(report.purchasePriceContext.fairMarketHigh);
   const dealAnalysis = analyzedDealerPrice !== null
@@ -318,9 +340,11 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             {vehicle.model}
             {vehicle.trim && <em className="text-[#00B4FF] not-italic"> {vehicle.trim}</em>}
           </h1>
-          <p className={`font-data text-[11px] mt-1.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>
-            Market: {report.purchasePriceContext.fairMarketLow} – {report.purchasePriceContext.fairMarketHigh}
-          </p>
+          <div className={`flex items-center gap-3 mt-1.5 font-data text-[11px] ${isDark ? 'text-white/25' : 'text-black/25'}`}>
+            <span>Market: {report.purchasePriceContext.fairMarketLow} – {report.purchasePriceContext.fairMarketHigh}</span>
+            <span>·</span>
+            <span style={{ color: actualMileage ? '#00B4FF' : undefined }}>{displayMileage}</span>
+          </div>
           <div className="mt-3">
             {report.bottomLine.smartBuy ? (
               <span className="inline-flex items-center gap-1.5 font-data text-[11px] px-2.5 py-1 rounded-full"
@@ -339,7 +363,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         {/* ── Dealer price + deal badge ── */}
         <div className={`rounded-xl p-4 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
-            Analyze Your Deal — Optional
+            Your Numbers — Optional
           </p>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -373,6 +397,36 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               Analyze
             </button>
           </div>
+          {/* Mileage input */}
+          <div className="flex gap-2 mt-2">
+            <div className="relative flex-1">
+              <input
+                type="text" inputMode="numeric" placeholder="Actual mileage (e.g. 47,000)"
+                value={mileageInput}
+                onChange={(e) => setMileageInput(e.target.value.replace(/[^0-9,]/g, ''))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const m = parseDollar(mileageInput);
+                    if (m > 0) { setActualMileage(m); saveMileage(vehicle.vin, m); }
+                  }
+                }}
+                className={`w-full px-4 py-2.5 rounded-lg font-data text-sm border outline-none focus:border-[#00B4FF] transition-colors ${
+                  isDark ? 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20'
+                         : 'bg-white border-black/15 text-[#0e0e10] placeholder:text-black/25'}`}
+              />
+            </div>
+            <button
+              onClick={() => {
+                const m = parseDollar(mileageInput);
+                if (m > 0) { setActualMileage(m); saveMileage(vehicle.vin, m); }
+              }}
+              disabled={parseDollar(mileageInput) <= 0}
+              className="px-4 py-2.5 rounded-lg bg-[#00B4FF] text-white font-data text-xs uppercase tracking-wider hover:bg-[#0099e0] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              Save
+            </button>
+          </div>
+
           {dealAnalysis && analyzedDealerPrice !== null && (
             <div className="mt-3 flex items-center justify-between gap-3 pt-3 border-t"
               style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }}>
@@ -569,6 +623,56 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             </div>
           ) : (
             <AnalyzeButton onClick={() => analyzeSection('features')} loading={!!sectionLoading.features} error={!!sectionErrors.features} theme={theme} />
+          )}
+        </Section>
+
+        {/* Maintenance Schedule */}
+        <Section label={`Maintenance Schedule${actualMileage ? ` · ${actualMileage.toLocaleString()} miles` : ' · Estimated Mileage'}`} theme={theme}>
+          {sectionData.maintenance ? (
+            <div className="space-y-4">
+              {sectionData.maintenance.criticalNote && (
+                <div className="flex gap-2.5 px-3 py-2.5 rounded-lg text-[13px] leading-relaxed"
+                  style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.18)' }}>
+                  <span className="flex-shrink-0 text-xs mt-0.5">⚠️</span>
+                  <span className={isDark ? 'text-white/70' : 'text-black/70'}>{sectionData.maintenance.criticalNote}</span>
+                </div>
+              )}
+              {sectionData.maintenance.dueSoon && sectionData.maintenance.dueSoon.length > 0 && (
+                <div>
+                  <p className="font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-red-400">Due Now</p>
+                  <ul className="space-y-1.5">
+                    {sectionData.maintenance.dueSoon.map((item, i) => (
+                      <li key={i} className={`flex items-start gap-2 text-sm ${isDark ? 'text-white/65' : 'text-black/65'}`}>
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-red-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sectionData.maintenance.upcoming && sectionData.maintenance.upcoming.length > 0 && (
+                <div className={`pt-3 border-t ${isDark ? 'border-white/[0.07]' : 'border-black/[0.07]'}`}>
+                  <p className="font-data text-[10px] uppercase tracking-[0.1em] mb-2 text-[#00B4FF]">Coming Up</p>
+                  <ul className="space-y-1.5">
+                    {sectionData.maintenance.upcoming.map((item, i) => (
+                      <li key={i} className={`flex items-start gap-2 text-sm ${isDark ? 'text-white/65' : 'text-black/65'}`}>
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-[#00B4FF] flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {!actualMileage && (
+                <p className={`text-xs mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
+                  Enter your actual mileage above for a more accurate schedule.
+                </p>
+              )}
+              <AnalyzeButton onClick={() => analyzeSection('maintenance')} loading={!!sectionLoading.maintenance} error={!!sectionErrors.maintenance} theme={theme} />
+            </>
           )}
         </Section>
 

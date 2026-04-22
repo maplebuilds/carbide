@@ -11,13 +11,20 @@ function vehicleDesc(vehicle: VehicleData): string {
   return `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`;
 }
 
-function buildSectionPrompt(section: string, vehicle: VehicleData, numbers: CarReport): string {
+function buildSectionPrompt(section: string, vehicle: VehicleData, numbers: CarReport, mileage?: number): string {
   const desc = vehicleDesc(vehicle);
+  const currentYear = new Date().getFullYear();
+  const vehicleAge = currentYear - parseInt(vehicle.year);
+  const estimatedMiles = vehicleAge * 12500;
+  const mileageStr = mileage
+    ? `${mileage.toLocaleString()} miles (actual)`
+    : `~${estimatedMiles.toLocaleString()} miles (estimated from age)`;
 
   switch (section) {
     case 'purchase':
       return `Write a 2-sentence purchase price analysis for the ${desc}.
 Fair market range: ${numbers.purchasePriceContext.fairMarketLow} – ${numbers.purchasePriceContext.fairMarketHigh}
+Mileage: ${mileageStr}
 Return ONLY: { "purchasePriceContext": { "analysis": "2 sentences: why this price range exists, key factors (age/mileage/region), one tip for using it at the dealer." } }`;
 
     case 'financing':
@@ -40,9 +47,26 @@ Return ONLY: { "fuelCosts": { "analysis": "1-2 sentences: is this good/bad mpg f
 Values: now ${numbers.depreciationResidualValue.currentValue} → 1yr ${numbers.depreciationResidualValue.value1Year} → 3yr ${numbers.depreciationResidualValue.value3Year} → 5yr ${numbers.depreciationResidualValue.value5Year}
 Return ONLY: { "depreciationResidualValue": { "analysis": "2 sentences: how fast this model depreciates vs average, what to expect at resale." } }`;
 
+    case 'maintenance':
+      return `Based on the ${desc} with ${mileageStr}, list what maintenance is due now and coming up.
+Engine: ${vehicle.engine || 'Unknown'} | Drivetrain: ${vehicle.drivetrain || 'Unknown'} | Fuel: ${vehicle.fuelType || 'Gasoline'}
+Annual maintenance cost estimate: ${numbers.maintenanceReliability.annualCost}
+Known issues: ${numbers.maintenanceReliability.knownIssues}
+
+Use the OEM maintenance schedule for this specific model. Be specific about mileage intervals.
+Return ONLY:
+{
+  "maintenance": {
+    "dueSoon": ["3-4 items likely due NOW at this mileage — include the service name and typical cost range"],
+    "upcoming": ["3-4 items due in the next 15,000 miles — include mileage interval and typical cost"],
+    "criticalNote": "1 sentence: the single most important maintenance item to verify on this specific model at this mileage."
+  }
+}`;
+
     case 'verdict':
       return `Write the full verdict for the ${desc}.
 Engine: ${vehicle.engine || 'Unknown'} | Drivetrain: ${vehicle.drivetrain || 'Unknown'} | Fuel: ${vehicle.fuelType || 'Gasoline'}
+Mileage: ${mileageStr}
 Smart Buy: ${numbers.bottomLine.smartBuy} | Reliability: ${numbers.maintenanceReliability.reliabilityRating}
 Year 1: ${numbers.totalCostOfOwnership.year1Total} | 3-Year TCO: ${numbers.totalCostOfOwnership.year3Total}
 Known issues: ${numbers.maintenanceReliability.knownIssues}
@@ -81,6 +105,7 @@ Return ONLY:
 
 function maxTokensForSection(section: string): number {
   if (section === 'verdict') return 1200;
+  if (section === 'maintenance') return 600;
   if (section === 'features') return 400;
   return 400;
 }
@@ -91,18 +116,19 @@ export async function POST(req: NextRequest) {
     const vehicle: VehicleData = body.vehicle;
     const numbers: CarReport = body.numbers;
     const section: string | undefined = body.section;
+    const mileage: number | undefined = body.mileage ?? undefined;
 
     if (!vehicle?.vin || !numbers) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
     }
 
-    const prompt = section ? buildSectionPrompt(section, vehicle, numbers) : '';
+    const prompt = section ? buildSectionPrompt(section, vehicle, numbers, mileage) : '';
     if (!prompt) {
       return NextResponse.json({ error: 'Invalid section.' }, { status: 400 });
     }
 
-    // Return cached result if available (same VIN + section combo)
-    const cacheKey = `${vehicle.vin}:${section}`;
+    // Cache key includes mileage so actual vs estimated get separate results
+    const cacheKey = `${vehicle.vin}:${section}:${mileage ?? 'est'}`;
     if (sectionCache.has(cacheKey)) {
       return NextResponse.json({ prose: sectionCache.get(cacheKey) });
     }

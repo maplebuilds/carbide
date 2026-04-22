@@ -80,6 +80,29 @@ export function saveDealerPrice(vin: string, price: number): void {
   } catch {}
 }
 
+const MILEAGE_KEY = 'carbide_mileage';
+
+export function getMileage(vin: string): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(MILEAGE_KEY);
+    const data: Record<string, number> = stored ? JSON.parse(stored) : {};
+    return data[vin] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveMileage(vin: string, miles: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const stored = localStorage.getItem(MILEAGE_KEY);
+    const data: Record<string, number> = stored ? JSON.parse(stored) : {};
+    data[vin] = miles;
+    localStorage.setItem(MILEAGE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
 export function saveEmail(email: string): void {
   if (typeof window === 'undefined') return;
   try {
