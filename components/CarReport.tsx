@@ -173,27 +173,30 @@ function AffiliateRow({ theme, links }: {
 }) {
   const isDark = theme === 'dark';
   return (
-    <div className="grid grid-cols-2 gap-2 mt-4">
-      {links.map(link => (
-        <a key={link.trackingId}
-          href={link.href} target="_blank" rel="noopener noreferrer"
-          onClick={() => console.log(`[Carbide CTA Click] id=${link.trackingId}`)}
-          className="flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border transition-all active:scale-95 group"
-          style={{
-            borderColor: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)',
-            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-          }}
-        >
-          <div className="flex items-center justify-between gap-1">
-            <span className="font-data text-[10px] uppercase tracking-wider group-hover:text-[#00B4FF] transition-colors"
-              style={{ color: link.accent }}>{link.label}</span>
-            <ExternalLink size={10} style={{ color: link.accent, opacity: 0.7, flexShrink: 0 }} />
-          </div>
-          <span className={`font-data text-[10px] leading-tight ${isDark ? 'text-white/30' : 'text-black/30'}`}>
-            {link.sublabel}
-          </span>
-        </a>
-      ))}
+    <div className="grid grid-cols-2 gap-2.5 mt-4">
+      {links.map(link => {
+        const hex = link.accent;
+        return (
+          <a key={link.trackingId}
+            href={link.href} target="_blank" rel="noopener noreferrer"
+            onClick={() => console.log(`[Carbide CTA Click] id=${link.trackingId}`)}
+            className="flex flex-col gap-1.5 px-4 py-3.5 rounded-xl border-2 transition-all active:scale-95 hover:scale-[1.02]"
+            style={{
+              borderColor: hex + '55',
+              background: hex + '0f',
+            }}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-data text-[11px] font-semibold uppercase tracking-wider"
+                style={{ color: hex }}>{link.label}</span>
+              <ExternalLink size={11} style={{ color: hex, flexShrink: 0 }} />
+            </div>
+            <span className={`font-data text-[11px] leading-snug ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+              {link.sublabel}
+            </span>
+          </a>
+        );
+      })}
     </div>
   );
 }
@@ -228,6 +231,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
   const [mileageInput, setMileageInput] = useState('');
   const [actualMileage, setActualMileage] = useState<number | null>(null);
   const [mileageSaved, setMileageSaved] = useState(false);
+  const [analysisUnlocked, setAnalysisUnlocked] = useState(false);
   const verdictAutoFired = useRef(false);
   const [sectionData, setSectionData] = useState<Partial<Record<SectionKey, SectionData>>>({});
   const [sectionLoading, setSectionLoading] = useState<Partial<Record<SectionKey, boolean>>>({});
@@ -254,7 +258,10 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         watchOut: report.bottomLine.watchOut,
         askDealer: report.bottomLine.askDealer,
       };
-    if (Object.keys(prefilled).length > 0) setSectionData(prefilled);
+    if (Object.keys(prefilled).length > 0) {
+      setSectionData(prefilled);
+      setAnalysisUnlocked(true); // already have data from history — show sections
+    }
   }, [report]);
 
   // Load persisted dealer price + mileage
@@ -340,6 +347,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
   const anyLoading = ALL_SECTIONS.some(s => !!sectionLoading[s]);
 
   const analyzeAll = useCallback(() => {
+    setAnalysisUnlocked(true);
     ALL_SECTIONS.forEach(s => {
       if (!sectionData[s] && !sectionLoading[s]) analyzeSection(s);
     });
@@ -405,7 +413,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                 {vehicle.year} · {vehicle.make}
               </p>
               <div className="min-w-0">
-                <h1 className="font-display text-[26px] leading-tight break-words" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
+                <h1 className="font-display text-[26px] leading-tight" style={{ color: isDark ? '#e8e8ec' : '#0e0e10', overflowWrap: 'anywhere' }}>
                   {vehicle.model}
                   {vehicle.trim && <em className="text-[#00B4FF] not-italic"> {vehicle.trim}</em>}
                 </h1>
@@ -678,7 +686,8 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           </button>
         )}
 
-        {/* ─── On-demand deep analysis ─────────────────────────────────────── */}
+        {/* ─── On-demand deep analysis (hidden until unlocked) ────────────── */}
+        {analysisUnlocked && (<>
 
         {/* Purchase Price Context */}
         <Section label="Purchase Price Context" theme={theme}>
@@ -730,7 +739,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             </div>
           )}
           <AffiliateRow theme={theme} links={[
-            { label: 'LendingTree', sublabel: 'Compare auto loan rates', href: 'https://www.lendingtree.com/auto/?source=carbide', trackingId: 'financing-cta', accent: '#00B4FF' },
+            { label: 'LendingTree', sublabel: 'Compare auto loan rates', href: 'https://www.lendingtree.com/auto/?source=carbide', trackingId: 'financing-cta', accent: '#22c55e' },
             { label: 'The Zebra', sublabel: 'Compare insurance quotes', href: 'https://www.thezebra.com/?source=carbide', trackingId: 'insurance-cta', accent: '#a78bfa' },
           ]} />
         </Section>
@@ -889,6 +898,8 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             </p>
           ) : null}
         </Section>
+
+        </>)} {/* end analysisUnlocked */}
 
         <EmailCapture theme={theme} vehicle={vehicle} />
       </div>
