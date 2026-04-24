@@ -76,7 +76,7 @@ export default function Home() {
       <Header theme={theme} onToggleTheme={handleToggleTheme} />
       <NavTabs activeTab={activeTab} onTabChange={handleTabChange} theme={theme} />
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 pb-8">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-6 pb-8">
         {activeTab === 'search' && (
           <SearchTab
             key={selectedHistoryItem?.vin ?? 'search'}

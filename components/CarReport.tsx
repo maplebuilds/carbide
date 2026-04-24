@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CheckCircle, XCircle, ExternalLink, Lock } from 'lucide-react';
 import EmailCapture from './EmailCapture';
 import { CarReport as CarReportType, VehicleData } from '@/lib/types';
 import { getDealerPrice, saveDealerPrice, getMileage, saveMileage } from '@/lib/storage';
@@ -58,6 +58,17 @@ function reliabilityColor(r: string): string {
 
 function reliabilityShort(r: string): string {
   return r.split(/[.,—\-]/)[0].trim();
+}
+
+// 0=Walk Away, 1=Caution, 2=Fair Buy, 3=Smart Buy
+function getSmartBuyScore(smartBuy: boolean, reliabilityRating: string): number {
+  const rel = reliabilityRating.toLowerCase();
+  const isGood = rel.startsWith('excellent') || rel.startsWith('good') || rel.startsWith('above');
+  const isPoor = rel.includes('below') || rel.startsWith('poor');
+  if (smartBuy && isGood) return 3;
+  if (smartBuy) return 2;
+  if (!isPoor) return 1;
+  return 0;
 }
 
 function calcMonthlyPayment(principal: number, annualRatePct: number, months: number): string {
@@ -156,14 +167,34 @@ function AnalyzeButton({ onClick, loading, error, theme }: { onClick: () => void
   );
 }
 
-function AffiliateCTA({ label, href, theme, trackingId }: { label: string; href: string; theme: 'dark' | 'light'; trackingId: string }) {
+function AffiliateRow({ theme, links }: {
+  theme: 'dark' | 'light';
+  links: Array<{ label: string; sublabel: string; href: string; trackingId: string; accent: string }>;
+}) {
+  const isDark = theme === 'dark';
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer"
-      onClick={() => console.log(`[Carbide CTA Click] id=${trackingId}`)}
-      className="flex items-center justify-center gap-2 w-full py-2.5 px-4 mt-4 rounded-lg border border-[#00B4FF]/50 text-[#00B4FF] font-data text-xs uppercase tracking-wider hover:bg-[#00B4FF] hover:text-white transition-all active:scale-95"
-    >
-      {label} <ExternalLink size={12} />
-    </a>
+    <div className="grid grid-cols-2 gap-2 mt-4">
+      {links.map(link => (
+        <a key={link.trackingId}
+          href={link.href} target="_blank" rel="noopener noreferrer"
+          onClick={() => console.log(`[Carbide CTA Click] id=${link.trackingId}`)}
+          className="flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border transition-all active:scale-95 group"
+          style={{
+            borderColor: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)',
+            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="font-data text-[10px] uppercase tracking-wider group-hover:text-[#00B4FF] transition-colors"
+              style={{ color: link.accent }}>{link.label}</span>
+            <ExternalLink size={10} style={{ color: link.accent, opacity: 0.7, flexShrink: 0 }} />
+          </div>
+          <span className={`font-data text-[10px] leading-tight ${isDark ? 'text-white/30' : 'text-black/30'}`}>
+            {link.sublabel}
+          </span>
+        </a>
+      ))}
+    </div>
   );
 }
 
@@ -196,6 +227,8 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
   const [analyzedDealerPrice, setAnalyzedDealerPrice] = useState<number | null>(null);
   const [mileageInput, setMileageInput] = useState('');
   const [actualMileage, setActualMileage] = useState<number | null>(null);
+  const [mileageSaved, setMileageSaved] = useState(false);
+  const verdictAutoFired = useRef(false);
   const [sectionData, setSectionData] = useState<Partial<Record<SectionKey, SectionData>>>({});
   const [sectionLoading, setSectionLoading] = useState<Partial<Record<SectionKey, boolean>>>({});
   const [sectionErrors, setSectionErrors] = useState<Partial<Record<SectionKey, boolean>>>({});
@@ -294,6 +327,25 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
     }
   }, [vehicle, report, actualMileage]);
 
+  // Auto-load verdict on first render if not already stored in history
+  useEffect(() => {
+    if (!verdictAutoFired.current && !report.bottomLine.verdict) {
+      verdictAutoFired.current = true;
+      analyzeSection('verdict');
+    }
+  }, [analyzeSection, report.bottomLine.verdict]);
+
+  const ALL_SECTIONS: SectionKey[] = ['purchase', 'financing', 'insurance', 'fuel', 'depreciation', 'features', 'maintenance'];
+  const allAnalyzed = ALL_SECTIONS.every(s => !!sectionData[s]);
+  const anyLoading = ALL_SECTIONS.some(s => !!sectionLoading[s]);
+
+  const analyzeAll = useCallback(() => {
+    ALL_SECTIONS.forEach(s => {
+      if (!sectionData[s] && !sectionLoading[s]) analyzeSection(s);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analyzeSection, sectionData, sectionLoading]);
+
   const isDark = theme === 'dark';
   const currentYear = new Date().getFullYear();
   const vehicleAge = currentYear - parseInt(vehicle.year);
@@ -338,33 +390,81 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
       <div className="relative z-10 space-y-4">
 
         {/* ── Vehicle header ── */}
-        <div className={`rounded-xl border-2 border-[#00B4FF] px-5 py-5 ${isDark ? 'bg-[#00B4FF]/[0.04]' : 'bg-[#00B4FF]/[0.04]'}`}>
-          <p className="font-data text-[10px] text-[#00B4FF] uppercase tracking-[0.15em] mb-1">
-            {vehicle.year} · {vehicle.make}
-          </p>
-          <h1 className="font-display text-[26px] leading-tight" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
-            {vehicle.model}
-            {vehicle.trim && <em className="text-[#00B4FF] not-italic"> {vehicle.trim}</em>}
-          </h1>
-          <div className={`flex items-center gap-3 mt-1.5 font-data text-[11px] ${isDark ? 'text-white/25' : 'text-black/25'}`}>
-            <span>Market: {report.purchasePriceContext.fairMarketLow} – {report.purchasePriceContext.fairMarketHigh}</span>
-            <span>·</span>
-            <span style={{ color: actualMileage ? '#00B4FF' : undefined }}>{displayMileage}</span>
-          </div>
-          <div className="mt-3">
-            {report.bottomLine.smartBuy ? (
-              <span className="inline-flex items-center gap-1.5 font-data text-[11px] px-2.5 py-1 rounded-full"
-                style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
-                <CheckCircle size={11} /> Smart Buy
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 font-data text-[11px] px-2.5 py-1 rounded-full"
-                style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                <XCircle size={11} /> Proceed with Caution
-              </span>
-            )}
-          </div>
-        </div>
+        {(() => {
+          const score = getSmartBuyScore(report.bottomLine.smartBuy, report.maintenanceReliability.reliabilityRating);
+          const stops = [
+            { label: 'Walk Away', color: '#ef4444' },
+            { label: 'Caution',   color: '#f59e0b' },
+            { label: 'Fair Buy',  color: '#84cc16' },
+            { label: 'Smart Buy', color: '#22c55e' },
+          ];
+          const activeColor = stops[score].color;
+          return (
+            <div className={`rounded-xl border-2 border-[#00B4FF] px-5 py-5 overflow-hidden ${isDark ? 'bg-[#00B4FF]/[0.04]' : 'bg-[#00B4FF]/[0.04]'}`}>
+              <p className="font-data text-[10px] text-[#00B4FF] uppercase tracking-[0.15em] mb-1">
+                {vehicle.year} · {vehicle.make}
+              </p>
+              <div className="min-w-0">
+                <h1 className="font-display text-[26px] leading-tight break-words" style={{ color: isDark ? '#e8e8ec' : '#0e0e10' }}>
+                  {vehicle.model}
+                  {vehicle.trim && <em className="text-[#00B4FF] not-italic"> {vehicle.trim}</em>}
+                </h1>
+              </div>
+              <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 font-data text-[11px] ${isDark ? 'text-white/25' : 'text-black/25'}`}>
+                <span>Market: {report.purchasePriceContext.fairMarketLow} – {report.purchasePriceContext.fairMarketHigh}</span>
+                <span>·</span>
+                <span style={{ color: actualMileage ? '#00B4FF' : undefined }}>{displayMileage}</span>
+              </div>
+
+              {/* Badge + scale */}
+              <div className="mt-3 space-y-3">
+                {report.bottomLine.smartBuy ? (
+                  <span className="inline-flex items-center gap-1.5 font-data text-[11px] px-2.5 py-1 rounded-full"
+                    style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                    <CheckCircle size={11} /> Smart Buy
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 font-data text-[11px] px-2.5 py-1 rounded-full"
+                    style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                    <XCircle size={11} /> Proceed with Caution
+                  </span>
+                )}
+
+                {/* 4-stop spectrum scale */}
+                <div className="pt-1">
+                  <div className="relative flex items-center justify-between">
+                    {/* connecting line */}
+                    <div className="absolute left-0 right-0 top-[7px] h-px" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+                    {/* filled line up to active stop */}
+                    <div className="absolute left-0 top-[7px] h-px transition-all duration-500"
+                      style={{
+                        width: `${(score / 3) * 100}%`,
+                        background: activeColor,
+                        opacity: 0.6,
+                      }} />
+                    {stops.map((stop, i) => (
+                      <div key={i} className="relative flex flex-col items-center" style={{ width: 16 }}>
+                        <div className="w-3.5 h-3.5 rounded-full border-2 transition-all duration-300"
+                          style={{
+                            background: i === score ? activeColor : isDark ? '#0A0B0D' : '#ffffff',
+                            borderColor: i <= score ? activeColor : isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+                            transform: i === score ? 'scale(1.25)' : 'scale(1)',
+                          }} />
+                        <span className="mt-1.5 font-data text-[9px] leading-none text-center whitespace-nowrap"
+                          style={{
+                            color: i === score ? activeColor : isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                            fontWeight: i === score ? 600 : 400,
+                          }}>
+                          {stop.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Dealer price + deal badge ── */}
         <div className={`rounded-xl p-4 ${isDark ? 'steel-card' : 'light-card'}`}>
@@ -409,27 +509,42 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               <input
                 type="text" inputMode="numeric" placeholder="Actual mileage (e.g. 47,000)"
                 value={mileageInput}
-                onChange={(e) => setMileageInput(e.target.value.replace(/[^0-9,]/g, ''))}
+                onChange={(e) => {
+                  setMileageInput(e.target.value.replace(/[^0-9,]/g, ''));
+                  if (mileageSaved) setMileageSaved(false);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const m = parseDollar(mileageInput);
-                    if (m > 0) { setActualMileage(m); saveMileage(vehicle.vin, m); }
+                    if (m > 0) { setActualMileage(m); saveMileage(vehicle.vin, m); setMileageSaved(true); }
                   }
                 }}
                 className={`w-full px-4 py-2.5 rounded-lg font-data text-sm border outline-none focus:border-[#00B4FF] transition-colors ${
-                  isDark ? 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20'
-                         : 'bg-white border-black/15 text-[#0e0e10] placeholder:text-black/25'}`}
+                  mileageSaved
+                    ? isDark ? 'bg-white/[0.03] border-[#00B4FF]/30 text-white/50' : 'bg-black/[0.02] border-[#00B4FF]/30 text-black/50'
+                    : isDark ? 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20'
+                             : 'bg-white border-black/15 text-[#0e0e10] placeholder:text-black/25'}`}
               />
             </div>
             <button
               onClick={() => {
                 const m = parseDollar(mileageInput);
-                if (m > 0) { setActualMileage(m); saveMileage(vehicle.vin, m); }
+                if (m > 0) { setActualMileage(m); saveMileage(vehicle.vin, m); setMileageSaved(true); }
               }}
               disabled={parseDollar(mileageInput) <= 0}
-              className="px-4 py-2.5 rounded-lg bg-[#00B4FF] text-white font-data text-xs uppercase tracking-wider hover:bg-[#0099e0] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+              className="px-4 py-2.5 rounded-lg font-data text-xs uppercase tracking-wider active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5"
+              style={{
+                background: mileageSaved ? 'rgba(0,180,255,0.12)' : '#00B4FF',
+                color: mileageSaved ? '#00B4FF' : '#ffffff',
+                border: mileageSaved ? '1px solid rgba(0,180,255,0.35)' : 'none',
+              }}
             >
-              Save
+              {mileageSaved ? (
+                <>
+                  <Lock size={11} className="animate-[lockIn_0.3s_ease_forwards]" />
+                  Saved
+                </>
+              ) : 'Save'}
             </button>
           </div>
 
@@ -493,6 +608,44 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           />
         </div>
 
+        {/* ── The Verdict (auto-loads) ── */}
+        <div className={`rounded-xl border-2 p-5 ${report.bottomLine.smartBuy ? 'border-[#00B4FF]/40 bg-[#00B4FF]/[0.03]' : 'border-amber-500/40 bg-amber-500/[0.03]'}`}>
+          <div className="flex items-center gap-2.5 mb-4">
+            {report.bottomLine.smartBuy
+              ? <CheckCircle size={18} className="text-[#00B4FF] flex-shrink-0" />
+              : <XCircle size={18} className="text-amber-400 flex-shrink-0" />}
+            <p className={`font-data text-[10px] uppercase tracking-[0.12em] ${isDark ? 'text-white/30' : 'text-black/30'}`}>The Verdict</p>
+          </div>
+          {sectionData.verdict ? (
+            <>
+              {sectionData.verdict.overview && (
+                <p className={`text-sm leading-relaxed mb-3 ${isDark ? 'text-white/55' : 'text-black/55'}`}>{sectionData.verdict.overview}</p>
+              )}
+              <p className={`text-sm leading-relaxed mb-5 ${isDark ? 'text-white/85' : 'text-black/85'}`}>{sectionData.verdict.verdict}</p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
+                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Watch Out For</p>
+                  <p className={`text-sm leading-relaxed ${isDark ? 'text-white/65' : 'text-black/65'}`}>{sectionData.verdict.watchOut}</p>
+                </div>
+                <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
+                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Ask The Dealer</p>
+                  <p className={`text-sm leading-relaxed whitespace-pre-line ${isDark ? 'text-white/65' : 'text-black/65'}`}>{sectionData.verdict.askDealer}</p>
+                </div>
+              </div>
+            </>
+          ) : sectionLoading.verdict ? (
+            <div className="space-y-2.5 animate-pulse">
+              <div className="h-3 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-3 rounded-full w-4/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-3 rounded-full w-3/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-3 rounded-full w-2/3 mt-4" style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }} />
+              <div className="h-3 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }} />
+            </div>
+          ) : (
+            <AnalyzeButton onClick={() => analyzeSection('verdict')} loading={false} error={!!sectionErrors.verdict} theme={theme} />
+          )}
+        </div>
+
         {/* ── Flags ── */}
         <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Flags</p>
@@ -500,6 +653,30 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           {knownIssueLines.map((issue, i) => <Flag key={i} type="yellow" theme={theme}>{issue}</Flag>)}
           <Flag type="red" theme={theme}><strong>Major Risk:</strong> {report.maintenanceReliability.majorRisks}</Flag>
         </div>
+
+        {/* ─── Single "Get Analysis" button ───────────────────────────────── */}
+        {!allAnalyzed && (
+          <button
+            onClick={analyzeAll}
+            disabled={anyLoading}
+            className={`w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border font-data text-[11px] uppercase tracking-widest transition-all active:scale-[0.98] ${
+              anyLoading
+                ? isDark ? 'border-white/[0.07] text-white/25 cursor-wait' : 'border-black/[0.07] text-black/25 cursor-wait'
+                : isDark
+                  ? 'border-white/[0.1] text-white/50 hover:border-[#00B4FF]/60 hover:text-[#00B4FF] hover:bg-[#00B4FF]/[0.04]'
+                  : 'border-black/[0.1] text-black/50 hover:border-[#00B4FF]/60 hover:text-[#00B4FF] hover:bg-[#00B4FF]/[0.04]'
+            }`}
+          >
+            {anyLoading ? (
+              <>
+                <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                Analyzing…
+              </>
+            ) : (
+              <>↓ Get Analysis</>
+            )}
+          </button>
+        )}
 
         {/* ─── On-demand deep analysis ─────────────────────────────────────── */}
 
@@ -509,9 +686,15 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             <Stat label="Market Low" value={report.purchasePriceContext.fairMarketLow} accent theme={theme} />
             <Stat label="Market High" value={report.purchasePriceContext.fairMarketHigh} accent theme={theme} />
           </div>
-          {sectionData.purchase?.analysis
-            ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.purchase.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('purchase')} loading={!!sectionLoading.purchase} error={!!sectionErrors.purchase} theme={theme} />}
+          {sectionData.purchase?.analysis && (
+            <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.purchase.analysis}</p>
+          )}
+          {!sectionData.purchase && sectionLoading.purchase && (
+            <div className="mt-3 space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-4/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          )}
         </Section>
 
         {/* Financing */}
@@ -537,10 +720,19 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               </div>
             );
           })()}
-          {sectionData.financing?.analysis
-            ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.financing.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('financing')} loading={!!sectionLoading.financing} error={!!sectionErrors.financing} theme={theme} />}
-          <AffiliateCTA label="See real loan rates for this vehicle" href="https://www.lendingtree.com/auto/?source=carbide" theme={theme} trackingId="financing-cta" />
+          {sectionData.financing?.analysis && (
+            <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.financing.analysis}</p>
+          )}
+          {!sectionData.financing && sectionLoading.financing && (
+            <div className="mt-3 space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-3/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          )}
+          <AffiliateRow theme={theme} links={[
+            { label: 'LendingTree', sublabel: 'Compare auto loan rates', href: 'https://www.lendingtree.com/auto/?source=carbide', trackingId: 'financing-cta', accent: '#00B4FF' },
+            { label: 'The Zebra', sublabel: 'Compare insurance quotes', href: 'https://www.thezebra.com/?source=carbide', trackingId: 'insurance-cta', accent: '#a78bfa' },
+          ]} />
         </Section>
 
         {/* Insurance */}
@@ -549,10 +741,15 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             <Stat label="Monthly Low" value={report.insuranceEstimate.monthlyLow + '/mo'} theme={theme} />
             <Stat label="Monthly High" value={report.insuranceEstimate.monthlyHigh + '/mo'} accent theme={theme} />
           </div>
-          {sectionData.insurance?.analysis
-            ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.insurance.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('insurance')} loading={!!sectionLoading.insurance} error={!!sectionErrors.insurance} theme={theme} />}
-          <AffiliateCTA label="Get a real insurance quote" href="https://www.thezebra.com/?source=carbide" theme={theme} trackingId="insurance-cta" />
+          {sectionData.insurance?.analysis && (
+            <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.insurance.analysis}</p>
+          )}
+          {!sectionData.insurance && sectionLoading.insurance && (
+            <div className="mt-3 space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-4/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          )}
         </Section>
 
         {/* Fuel */}
@@ -566,9 +763,15 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             <Stat label="Monthly" value={report.fuelCosts.monthlyCost} accent theme={theme} />
             <Stat label="Annual" value={report.fuelCosts.annualCost} accent theme={theme} />
           </div>
-          {sectionData.fuel?.analysis
-            ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.fuel.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('fuel')} loading={!!sectionLoading.fuel} error={!!sectionErrors.fuel} theme={theme} />}
+          {sectionData.fuel?.analysis && (
+            <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.fuel.analysis}</p>
+          )}
+          {!sectionData.fuel && sectionLoading.fuel && (
+            <div className="mt-3 space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-2/3" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          )}
         </Section>
 
         {/* Depreciation */}
@@ -579,9 +782,15 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             <Stat label="3 Years" value={report.depreciationResidualValue.value3Year} accent theme={theme} />
             <Stat label="5 Years" value={report.depreciationResidualValue.value5Year} accent theme={theme} />
           </div>
-          {sectionData.depreciation?.analysis
-            ? <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.depreciation.analysis}</p>
-            : <AnalyzeButton onClick={() => analyzeSection('depreciation')} loading={!!sectionLoading.depreciation} error={!!sectionErrors.depreciation} theme={theme} />}
+          {sectionData.depreciation?.analysis && (
+            <p className={`text-sm leading-relaxed mt-4 ${isDark ? 'text-white/60' : 'text-black/60'}`}>{sectionData.depreciation.analysis}</p>
+          )}
+          {!sectionData.depreciation && sectionLoading.depreciation && (
+            <div className="mt-3 space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-4/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          )}
         </Section>
 
         {/* Key Features */}
@@ -621,9 +830,13 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                 </div>
               )}
             </div>
-          ) : (
-            <AnalyzeButton onClick={() => analyzeSection('features')} loading={!!sectionLoading.features} error={!!sectionErrors.features} theme={theme} />
-          )}
+          ) : sectionLoading.features ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-3/4" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-1/2" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          ) : null}
         </Section>
 
         {/* Maintenance Schedule */}
@@ -664,47 +877,18 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              {!actualMileage && (
-                <p className={`text-xs mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
-                  Enter your actual mileage above for a more accurate schedule.
-                </p>
-              )}
-              <AnalyzeButton onClick={() => analyzeSection('maintenance')} loading={!!sectionLoading.maintenance} error={!!sectionErrors.maintenance} theme={theme} />
-            </>
-          )}
+          ) : sectionLoading.maintenance ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-2.5 rounded-full w-full" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-4/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+              <div className="h-2.5 rounded-full w-3/5" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }} />
+            </div>
+          ) : !actualMileage ? (
+            <p className={`text-xs ${isDark ? 'text-white/30' : 'text-black/30'}`}>
+              Enter your actual mileage above, then hit Get Analysis to see your maintenance schedule.
+            </p>
+          ) : null}
         </Section>
-
-        {/* The Verdict */}
-        <div className={`rounded-xl border-2 p-5 ${report.bottomLine.smartBuy ? 'border-[#00B4FF]/40 bg-[#00B4FF]/[0.03]' : 'border-red-500/40 bg-red-500/[0.03]'}`}>
-          <div className="flex items-center gap-2.5 mb-4">
-            {report.bottomLine.smartBuy
-              ? <CheckCircle size={18} className="text-[#00B4FF] flex-shrink-0" />
-              : <XCircle size={18} className="text-red-400 flex-shrink-0" />}
-            <p className={`font-data text-[10px] uppercase tracking-[0.12em] ${isDark ? 'text-white/30' : 'text-black/30'}`}>The Verdict</p>
-          </div>
-          {sectionData.verdict ? (
-            <>
-              {sectionData.verdict.overview && (
-                <p className={`text-sm leading-relaxed mb-3 ${isDark ? 'text-white/55' : 'text-black/55'}`}>{sectionData.verdict.overview}</p>
-              )}
-              <p className={`text-sm leading-relaxed mb-5 ${isDark ? 'text-white/85' : 'text-black/85'}`}>{sectionData.verdict.verdict}</p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
-                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Watch Out For</p>
-                  <p className={`text-sm leading-relaxed ${isDark ? 'text-white/65' : 'text-black/65'}`}>{sectionData.verdict.watchOut}</p>
-                </div>
-                <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
-                  <p className="font-data text-[10px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Ask The Dealer</p>
-                  <p className={`text-sm leading-relaxed whitespace-pre-line ${isDark ? 'text-white/65' : 'text-black/65'}`}>{sectionData.verdict.askDealer}</p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <AnalyzeButton onClick={() => analyzeSection('verdict')} loading={!!sectionLoading.verdict} error={!!sectionErrors.verdict} theme={theme} />
-          )}
-        </div>
 
         <EmailCapture theme={theme} vehicle={vehicle} />
       </div>
