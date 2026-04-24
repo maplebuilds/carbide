@@ -117,7 +117,7 @@ function CostRow({ label, value, highlight, theme }: { label: string; value: str
 function Section({ label, children, theme }: { label: string; children: React.ReactNode; theme: 'dark' | 'light' }) {
   const isDark = theme === 'dark';
   return (
-    <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
+    <div className={`rounded-xl p-6 ${isDark ? 'steel-card' : 'light-card'}`}>
       <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-4 ${isDark ? 'text-white/30' : 'text-black/30'}`}>{label}</p>
       {children}
     </div>
@@ -275,6 +275,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
     if (savedMiles) {
       setMileageInput(savedMiles.toLocaleString());
       setActualMileage(savedMiles);
+      setMileageSaved(true);
     }
   }, [vehicle.vin]);
 
@@ -408,7 +409,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           ];
           const activeColor = stops[score].color;
           return (
-            <div className={`rounded-xl border-2 border-[#00B4FF] px-5 py-5 overflow-hidden ${isDark ? 'bg-[#00B4FF]/[0.04]' : 'bg-[#00B4FF]/[0.04]'}`}>
+            <div className={`rounded-xl border-2 border-[#00B4FF] px-6 py-6 overflow-hidden ${isDark ? 'bg-[#00B4FF]/[0.04]' : 'bg-[#00B4FF]/[0.04]'}`}>
               <p className="font-data text-[10px] text-[#00B4FF] uppercase tracking-[0.15em] mb-1">
                 {vehicle.year} · {vehicle.make}
               </p>
@@ -439,33 +440,29 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                 )}
 
                 {/* 4-stop spectrum scale */}
-                <div className="pt-1">
-                  <div className="relative flex items-center justify-between">
-                    {/* connecting line */}
-                    <div className="absolute left-0 right-0 top-[7px] h-px" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
-                    {/* filled line up to active stop */}
-                    <div className="absolute left-0 top-[7px] h-px transition-all duration-500"
+                <div className="pt-2 px-2">
+                  {/* gradient track */}
+                  <div className="relative w-full h-[3px] rounded-full mb-5"
+                    style={{ background: 'linear-gradient(to right, #ef4444, #f59e0b, #84cc16, #22c55e)' }}>
+                    {/* active dot on the track */}
+                    <div className="absolute w-6 h-6 rounded-full border-2 -top-[11px] transition-all duration-300"
                       style={{
-                        width: `${(score / 3) * 100}%`,
+                        left: `calc(${(score / 3) * 100}% - 12px)`,
                         background: activeColor,
-                        opacity: 0.6,
+                        borderColor: isDark ? '#0A0B0D' : '#ffffff',
+                        boxShadow: `0 0 10px ${activeColor}cc, 0 0 20px ${activeColor}55`,
                       }} />
+                  </div>
+                  {/* labels row */}
+                  <div className="flex justify-between">
                     {stops.map((stop, i) => (
-                      <div key={i} className="relative flex flex-col items-center" style={{ width: 16 }}>
-                        <div className="w-3.5 h-3.5 rounded-full border-2 transition-all duration-300"
-                          style={{
-                            background: i === score ? activeColor : isDark ? '#0A0B0D' : '#ffffff',
-                            borderColor: i <= score ? activeColor : isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
-                            transform: i === score ? 'scale(1.25)' : 'scale(1)',
-                          }} />
-                        <span className="mt-1.5 font-data text-[9px] leading-none text-center whitespace-nowrap"
-                          style={{
-                            color: i === score ? activeColor : isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                            fontWeight: i === score ? 600 : 400,
-                          }}>
-                          {stop.label}
-                        </span>
-                      </div>
+                      <span key={i} className="font-data text-[9px] leading-none whitespace-nowrap"
+                        style={{
+                          color: i === score ? activeColor : isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                          fontWeight: i === score ? 600 : 400,
+                        }}>
+                        {stop.label}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -475,7 +472,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         })()}
 
         {/* ── Dealer price + deal badge ── */}
-        <div className={`rounded-xl p-4 ${isDark ? 'steel-card' : 'light-card'}`}>
+        <div className={`rounded-xl p-6 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
             Your Numbers — Optional
           </p>
@@ -572,7 +569,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
 
         {/* ── Quick stats ── */}
         <div className="grid grid-cols-2 gap-2.5">
-          <div className={`rounded-xl p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
+          <div className={`rounded-xl p-5 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
               {analyzedDealerPrice ? 'Monthly (your price)' : 'Monthly Payment'}
             </p>
@@ -581,7 +578,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
             </p>
             <p className={`text-[11px] mt-1.5 ${isDark ? 'text-white/25' : 'text-black/25'}`}>good credit · 60 months</p>
           </div>
-          <div className={`rounded-xl p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
+          <div className={`rounded-xl p-5 ${isDark ? 'steel-inner' : 'light-inner'}`}>
             <p className={`font-data text-[10px] uppercase tracking-[0.1em] mb-2 ${isDark ? 'text-white/30' : 'text-black/30'}`}>3-Year TCO</p>
             <p className="font-data text-[22px] font-medium leading-none text-[#00B4FF]">
               {formatDollar(year3Total)}
@@ -591,7 +588,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </div>
 
         {/* ── Cost breakdown ── */}
-        <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
+        <div className={`rounded-xl p-6 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Cost Breakdown</p>
           {analyzedDealerPrice !== null && (
             <CostRow label="Dealer asking price" value={formatDollar(analyzedDealerPrice)} theme={theme} />
@@ -617,7 +614,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </div>
 
         {/* ── The Verdict (auto-loads) ── */}
-        <div className={`rounded-xl border-2 p-5 ${report.bottomLine.smartBuy ? 'border-[#00B4FF]/40 bg-[#00B4FF]/[0.03]' : 'border-amber-500/40 bg-amber-500/[0.03]'}`}>
+        <div className={`rounded-xl border-2 p-6 ${report.bottomLine.smartBuy ? 'border-[#00B4FF]/40 bg-[#00B4FF]/[0.03]' : 'border-amber-500/40 bg-amber-500/[0.03]'}`}>
           <div className="flex items-center gap-2.5 mb-4">
             {report.bottomLine.smartBuy
               ? <CheckCircle size={18} className="text-[#00B4FF] flex-shrink-0" />
@@ -655,7 +652,7 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
         </div>
 
         {/* ── Flags ── */}
-        <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
+        <div className={`rounded-xl p-6 ${isDark ? 'steel-card' : 'light-card'}`}>
           <p className={`font-data text-[10px] uppercase tracking-[0.12em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`}>Flags</p>
           {relIsGood && <Flag type="green" theme={theme}><strong>Reliability:</strong> {relShort}</Flag>}
           {knownIssueLines.map((issue, i) => <Flag key={i} type="yellow" theme={theme}>{issue}</Flag>)}

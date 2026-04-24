@@ -162,7 +162,7 @@ interface CarFeatures {
   trimAdvantage?: string;
 }
 
-function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dark' | 'light'; featuresRef?: (f: CarFeatures | null) => void }) {
+function CarSection({ car, theme, featuresRef, onDealerPriceChange }: { car: HistoryItem; theme: 'dark' | 'light'; featuresRef?: (f: CarFeatures | null) => void; onDealerPriceChange?: (price: number | null) => void }) {
   const isDark = theme === 'dark';
   const r = car.report;
   const relRank = reliabilityRank(r.maintenanceReliability.reliabilityRating);
@@ -184,7 +184,7 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
 
   const analyzePrice = () => {
     const p = parseInt(dealerPriceInput.replace(/[^0-9]/g, ''), 10);
-    if (p > 0) { setDealerPrice(p); saveDealerPrice(car.vin, p); }
+    if (p > 0) { setDealerPrice(p); saveDealerPrice(car.vin, p); onDealerPriceChange?.(p); }
   };
 
   const loadFeatures = async () => {
@@ -385,12 +385,12 @@ function CarSection({ car, theme, featuresRef }: { car: HistoryItem; theme: 'dar
 
 // ─── Scorecard ────────────────────────────────────────────────────────────────
 
-function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; theme: 'dark' | 'light' }) {
+function Scorecard({ carA, carB, theme, dealerPriceA, dealerPriceB }: { carA: HistoryItem; carB: HistoryItem; theme: 'dark' | 'light'; dealerPriceA: number | null; dealerPriceB: number | null }) {
   const isDark = theme === 'dark';
   const ra = carA.report, rb = carB.report;
 
-  const dealerA = getDealerPrice(carA.vin);
-  const dealerB = getDealerPrice(carB.vin);
+  const dealerA = dealerPriceA;
+  const dealerB = dealerPriceB;
   const monthlyA = dealerA ? calcMonthlyPayment(dealerA, 7.5, 60) : ra.financingEstimate.monthlyGoodCredit60;
   const monthlyB = dealerB ? calcMonthlyPayment(dealerB, 7.5, 60) : rb.financingEstimate.monthlyGoodCredit60;
 
@@ -500,10 +500,9 @@ function Scorecard({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem
 
 // ─── Verdict ─────────────────────────────────────────────────────────────────
 
-function Verdict({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; theme: 'dark' | 'light' }) {
+function Verdict({ carA, carB, theme, dealerPriceA, dealerPriceB }: { carA: HistoryItem; carB: HistoryItem; theme: 'dark' | 'light'; dealerPriceA: number | null; dealerPriceB: number | null }) {
   const isDark = theme === 'dark';
-  const computeTCO3Verdict = (r: CarReportType, vin: string) => {
-    const dealer = getDealerPrice(vin);
+  const computeTCO3Verdict = (r: CarReportType, dealer: number | null) => {
     const mktLow = parseDollar(r.purchasePriceContext.fairMarketLow);
     const mktHigh = parseDollar(r.purchasePriceContext.fairMarketHigh);
     const ins = Math.round(((parseDollar(r.insuranceEstimate.monthlyLow) + parseDollar(r.insuranceEstimate.monthlyHigh)) / 2) * 12 / 100) * 100;
@@ -512,8 +511,8 @@ function Verdict({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; 
     const base = dealer ?? Math.round((mktLow + mktHigh) / 2);
     return base + (ins + fuel + maint) * 3;
   };
-  const tcoA = computeTCO3Verdict(carA.report, carA.vin);
-  const tcoB = computeTCO3Verdict(carB.report, carB.vin);
+  const tcoA = computeTCO3Verdict(carA.report, dealerPriceA);
+  const tcoB = computeTCO3Verdict(carB.report, dealerPriceB);
   const costWinner = tcoA < tcoB ? carA : carB;
   const costLoser = tcoA < tcoB ? carB : carA;
   const tcoDiff = Math.abs(tcoA - tcoB);
@@ -576,6 +575,8 @@ function Verdict({ carA, carB, theme }: { carA: HistoryItem; carB: HistoryItem; 
 export default function CompareTab({ history, theme }: CompareTabProps) {
   const [vinA, setVinA] = useState('');
   const [vinB, setVinB] = useState('');
+  const [dealerPriceA, setDealerPriceA] = useState<number | null>(null);
+  const [dealerPriceB, setDealerPriceB] = useState<number | null>(null);
   const isDark = theme === 'dark';
 
   if (history.length < 2) {
@@ -593,6 +594,10 @@ export default function CompareTab({ history, theme }: CompareTabProps) {
   const carA = history.find(h => h.vin === vinA);
   const carB = history.find(h => h.vin === vinB);
 
+  // Sync prices from localStorage when VINs change
+  useEffect(() => { setDealerPriceA(vinA ? getDealerPrice(vinA) : null); }, [vinA]);
+  useEffect(() => { setDealerPriceB(vinB ? getDealerPrice(vinB) : null); }, [vinB]);
+
   return (
     <div className="space-y-5">
       {/* Selectors */}
@@ -604,10 +609,10 @@ export default function CompareTab({ history, theme }: CompareTabProps) {
       {carA && carB ? (
         <>
           {/* Scorecard */}
-          <Scorecard carA={carA} carB={carB} theme={theme} />
+          <Scorecard carA={carA} carB={carB} theme={theme} dealerPriceA={dealerPriceA} dealerPriceB={dealerPriceB} />
 
           {/* Verdict */}
-          <Verdict carA={carA} carB={carB} theme={theme} />
+          <Verdict carA={carA} carB={carB} theme={theme} dealerPriceA={dealerPriceA} dealerPriceB={dealerPriceB} />
 
           {/* Divider */}
           <div className={`flex items-center gap-4 ${isDark ? 'text-white/15' : 'text-black/15'}`}>
@@ -618,12 +623,12 @@ export default function CompareTab({ history, theme }: CompareTabProps) {
 
           {/* Car A */}
           <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
-            <CarSection key={carA.vin} car={carA} theme={theme} />
+            <CarSection key={carA.vin} car={carA} theme={theme} onDealerPriceChange={setDealerPriceA} />
           </div>
 
           {/* Car B */}
           <div className={`rounded-xl p-5 ${isDark ? 'steel-card' : 'light-card'}`}>
-            <CarSection key={carB.vin} car={carB} theme={theme} />
+            <CarSection key={carB.vin} car={carB} theme={theme} onDealerPriceChange={setDealerPriceB} />
           </div>
         </>
       ) : (
