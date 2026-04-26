@@ -42,6 +42,15 @@ function formatDollar(n: number): string {
   return '$' + Math.round(n).toLocaleString();
 }
 
+function parseNumberedList(text: string): string[] {
+  if (!text) return [];
+  // Split on "1.", "2.", "3." etc. at word boundaries
+  return text
+    .split(/(?=\b\d+\.\s)/)
+    .map(s => s.replace(/^\d+\.\s*/, '').trim())
+    .filter(s => s.length > 0);
+}
+
 function parseLines(text: string): string[] {
   return text
     .split('\n')
@@ -504,9 +513,14 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
                 if (p > 0) { setAnalyzedDealerPrice(p); saveDealerPrice(vehicle.vin, p); }
               }}
               disabled={parseDollar(dealerPriceInput) <= 0}
-              className="px-4 py-2.5 rounded-lg bg-[#00B4FF] text-white font-data text-smuppercase tracking-wider hover:bg-[#0099e0] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+              className="px-4 py-2.5 rounded-lg font-data text-sm uppercase tracking-wider active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5"
+              style={{
+                background: analyzedDealerPrice !== null ? 'rgba(0,180,255,0.12)' : '#00B4FF',
+                color: analyzedDealerPrice !== null ? '#00B4FF' : '#ffffff',
+                border: analyzedDealerPrice !== null ? '1px solid rgba(0,180,255,0.35)' : 'none',
+              }}
             >
-              Analyze
+              {analyzedDealerPrice !== null ? <><Lock size={13} /> Analyzed</> : 'Analyze'}
             </button>
           </div>
           {/* Mileage input */}
@@ -633,12 +647,26 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
               <p className={`text-baseleading-relaxed mb-5 ${isDark ? 'text-white/85' : 'text-black/85'}`} style={{ fontFamily: "'Martel', Georgia, serif" }}>{sectionData.verdict.verdict}</p>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
-                  <p className="font-data text-[12px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Watch Out For</p>
-                  <p className={`text-baseleading-relaxed ${isDark ? 'text-white/65' : 'text-black/65'}`} style={{ fontFamily: "'Martel', Georgia, serif" }}>{sectionData.verdict.watchOut}</p>
+                  <p className="font-data text-[12px] uppercase tracking-[0.1em] text-[#00B4FF] mb-3">Watch Out For</p>
+                  <ol className="space-y-3">
+                    {parseNumberedList(sectionData.verdict.watchOut ?? '').map((item, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="font-data text-[12px] text-[#00B4FF] flex-shrink-0 mt-0.5">{i + 1}.</span>
+                        <span className={`text-base leading-relaxed ${isDark ? 'text-white/65' : 'text-black/65'}`} style={{ fontFamily: "'Martel', Georgia, serif" }}>{item}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
                 <div className={`rounded-lg p-4 ${isDark ? 'steel-inner' : 'light-inner'}`}>
-                  <p className="font-data text-[12px] uppercase tracking-[0.1em] text-[#00B4FF] mb-2">Ask The Dealer</p>
-                  <p className={`text-baseleading-relaxed whitespace-pre-line ${isDark ? 'text-white/65' : 'text-black/65'}`} style={{ fontFamily: "'Martel', Georgia, serif" }}>{sectionData.verdict.askDealer}</p>
+                  <p className="font-data text-[12px] uppercase tracking-[0.1em] text-[#00B4FF] mb-3">Ask The Dealer</p>
+                  <ol className="space-y-3">
+                    {parseNumberedList(sectionData.verdict.askDealer ?? '').map((item, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="font-data text-[12px] text-[#00B4FF] flex-shrink-0 mt-0.5">{i + 1}.</span>
+                        <span className={`text-base leading-relaxed ${isDark ? 'text-white/65' : 'text-black/65'}`} style={{ fontFamily: "'Martel', Georgia, serif" }}>{item}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </div>
             </>
@@ -662,14 +690,6 @@ export default function CarReport({ report, vehicle, theme }: CarReportProps) {
           {knownIssueLines.map((issue, i) => <Flag key={i} type="yellow" theme={theme}>{issue}</Flag>)}
           <Flag type="red" theme={theme}><strong>Major Risk:</strong> {report.maintenanceReliability.majorRisks}</Flag>
         </div>
-
-        {/* Insurance Estimate */}
-        <Section label="Insurance Estimate" theme={theme}>
-          <div className="grid grid-cols-2 gap-4">
-            <Stat label="Monthly Low" value={report.insuranceEstimate.monthlyLow + '/mo'} theme={theme} />
-            <Stat label="Monthly High" value={report.insuranceEstimate.monthlyHigh + '/mo'} accent theme={theme} />
-          </div>
-        </Section>
 
         <EmailCapture theme={theme} vehicle={vehicle} />
       </div>
