@@ -17,7 +17,7 @@ export default function Footer({ theme }: FooterProps) {
           Estimates are for informational purposes only. Always verify with a licensed dealer and insurance provider.
         </p>
         <div className="flex items-center gap-4">
-          <Link href="/about" className={`text-xs font-mono hover:text-[#00B4FF] transition-colors ${theme === 'dark' ? 'text-white/20' : 'text-black/20'}`}>
+          <Link href="/about" className="text-xs font-mono text-[#00B4FF]/60 hover:text-[#00B4FF] transition-colors">
             About
           </Link>
           <p className={`text-xs font-mono ${theme === 'dark' ? 'text-white/20' : 'text-black/20'}`}>
