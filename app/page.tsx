@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import NavTabs, { Tab } from '@/components/NavTabs';
 import Footer from '@/components/Footer';
+import AboutSection from '@/components/AboutSection';
 import SearchTab from '@/components/SearchTab';
 import HistoryTab from '@/components/HistoryTab';
 import CompareTab from '@/components/CompareTab';
@@ -102,6 +103,7 @@ export default function Home() {
         )}
       </main>
 
+      <AboutSection theme={theme} />
       <Footer theme={theme} />
     </div>
   );
