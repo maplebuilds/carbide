@@ -106,7 +106,7 @@ Return ONLY:
 function maxTokensForSection(section: string): number {
   if (section === 'verdict') return 1200;
   if (section === 'maintenance') return 600;
-  if (section === 'features') return 400;
+  if (section === 'features') return 600;
   return 400;
 }
 

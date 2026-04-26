@@ -50,20 +50,29 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
             ? 'border-white/10 bg-white/5 focus-within:border-[#00B4FF]/60'
             : 'border-black/10 bg-black/5 focus-within:border-[#00B4FF]/60'
         }`}>
-          <input
-            type="text"
-            value={vin}
-            onChange={(e) => setVin(e.target.value.toUpperCase())}
-            placeholder="1HGBH41JXMN109186"
-            maxLength={17}
-            className={`flex-1 bg-transparent px-3 py-3 text-base sm:text-lg font-mono tracking-widest outline-none placeholder:opacity-30 min-w-0 ${
-              theme === 'dark' ? 'text-white placeholder:text-white' : 'text-[#1a1a1a] placeholder:text-[#1a1a1a]'
-            }`}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-          />
+          <div className="relative flex-1 min-w-0">
+            <input
+              type="text"
+              value={vin}
+              onChange={(e) => setVin(e.target.value.toUpperCase())}
+              placeholder="1HGBH41JXMN109186"
+              maxLength={17}
+              className={`w-full bg-transparent px-3 py-3 pr-14 text-base sm:text-lg font-mono tracking-widest outline-none placeholder:opacity-30 ${
+                theme === 'dark' ? 'text-white placeholder:text-white' : 'text-[#1a1a1a] placeholder:text-[#1a1a1a]'
+              }`}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+            <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono pointer-events-none ${
+              cleaned.length === 17
+                ? 'text-[#00B4FF]'
+                : theme === 'dark' ? 'text-white/30' : 'text-black/30'
+            }`}>
+              {cleaned.length}/17
+            </span>
+          </div>
           <button
             type="submit"
             disabled={!isValid || loading}
@@ -80,19 +89,10 @@ export default function VinInput({ onSubmit, loading, theme, error }: VinInputPr
           </button>
         </div>
 
-        {/* Character counter */}
-        <div className="flex justify-between items-center mt-2 px-1">
+        {/* Hint */}
+        <div className="mt-2 px-1">
           <p className={`text-xs ${theme === 'dark' ? 'text-white/30' : 'text-black/30'}`}>
             VIN is 17 characters — found on your dashboard, door frame, or title
-          </p>
-          <p className={`text-xs font-mono ${
-            cleaned.length === 17
-              ? 'text-[#00B4FF]'
-              : theme === 'dark'
-              ? 'text-white/30'
-              : 'text-black/30'
-          }`}>
-            {cleaned.length}/17
           </p>
         </div>
       </form>

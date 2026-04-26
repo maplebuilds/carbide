@@ -46,14 +46,14 @@ export default function CarbideLogo({ className = '', size = 'md', theme = 'dark
       {/* Wordmark — "carb" + "i" pin + "de" */}
       <g fontFamily="'JetBrains Mono', ui-monospace, monospace" fontWeight="600" fontSize="72" fill={inkColor} letterSpacing="-1.5">
         <text x="140" y="82">carb</text>
-        <text x="342" y="82">de</text>
+        <text x="323" y="82">de</text>
       </g>
 
       {/* "i" replaced by fuel-gauge pin */}
-      <g transform="translate(311 28)">
-        <circle cx="9" cy="7" r="6" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'} stroke="#00B4FF" strokeWidth="3"/>
-        <path d="M4 18 L14 18 L14 46 L9 54 L4 46 Z" fill="#00B4FF"/>
-        <rect x="6" y="26" width="6" height="10" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'}/>
+      <g transform="translate(312 24)">
+        <circle cx="3.5" cy="5" r="4.5" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'} stroke="#00B4FF" strokeWidth="2.5"/>
+        <path d="M0 13 L7 13 L7 52 L3.5 60 L0 52 Z" fill="#00B4FF"/>
+        <rect x="2.5" y="24" width="2" height="20" fill={theme === 'dark' ? '#0A0B0D' : '#ffffff'}/>
       </g>
     </svg>
   );

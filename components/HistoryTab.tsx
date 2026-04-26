@@ -2,6 +2,7 @@
 
 import { Clock, ChevronRight, Trash2 } from 'lucide-react';
 import { HistoryItem } from '@/lib/types';
+import { getDealerPrice, getMileage } from '@/lib/storage';
 
 interface HistoryTabProps {
   history: HistoryItem[];
@@ -63,6 +64,27 @@ export default function HistoryTab({ history, theme, onSelect, onClear }: Histor
                 <p className={`text-xs mt-1 ${isDark ? 'text-white/25' : 'text-black/25'}`}>
                   Viewed {new Date(item.dateViewed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
+                {(() => {
+                  const price = getDealerPrice(item.vin);
+                  const miles = getMileage(item.vin);
+                  if (!price && !miles) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {price && (
+                        <span className="inline-flex items-center font-data text-[10px] px-2 py-0.5 rounded-full"
+                          style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                          ${price.toLocaleString()}
+                        </span>
+                      )}
+                      {miles && (
+                        <span className="inline-flex items-center font-data text-[10px] px-2 py-0.5 rounded-full"
+                          style={{ color: '#00B4FF', background: 'rgba(0,180,255,0.1)', border: '1px solid rgba(0,180,255,0.25)' }}>
+                          {miles.toLocaleString()} mi
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <ChevronRight size={18} className={`flex-shrink-0 transition-colors ${isDark ? 'text-white/20 group-hover:text-[#00B4FF]' : 'text-black/20 group-hover:text-[#00B4FF]'}`} />
             </div>

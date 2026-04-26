@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --default-font-family: 'JetBrains Mono', ui-monospace, monospace;
   --background: #07080d;
   --foreground: #d8dde8;
   --accent: #00B4FF;
@@ -26,7 +27,7 @@ body {
     radial-gradient(ellipse at 0% 60%, rgba(90, 105, 130, 0.04) 0%, transparent 50%),
     radial-gradient(ellipse at 100% 40%, rgba(90, 105, 130, 0.03) 0%, transparent 50%);
   color: var(--foreground);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* ─── Steel card system ──────────────────────────────────────────────────────── */
@@ -88,6 +89,11 @@ body {
 
 .font-data {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.font-prose {
+  font-family: 'Martel', Georgia, serif !important;
+  line-height: 1.75;
 }
 
 /* Ensure 16px minimum for inputs on mobile to prevent iOS zoom */
