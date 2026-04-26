@@ -1,6 +1,7 @@
 'use client';
 
 import pkg from '@/package.json';
+import Link from 'next/link';
 
 interface FooterProps {
   theme: 'dark' | 'light';
@@ -15,9 +16,14 @@ export default function Footer({ theme }: FooterProps) {
         <p className={`text-xs ${theme === 'dark' ? 'text-white/30' : 'text-black/30'}`}>
           Estimates are for informational purposes only. Always verify with a licensed dealer and insurance provider.
         </p>
-        <p className={`text-xs font-mono ${theme === 'dark' ? 'text-white/20' : 'text-black/20'}`}>
-          v{pkg.version}
-        </p>
+        <div className="flex items-center gap-4">
+          <Link href="/about" className={`text-xs font-mono hover:text-[#00B4FF] transition-colors ${theme === 'dark' ? 'text-white/20' : 'text-black/20'}`}>
+            About
+          </Link>
+          <p className={`text-xs font-mono ${theme === 'dark' ? 'text-white/20' : 'text-black/20'}`}>
+            v{pkg.version}
+          </p>
+        </div>
       </div>
     </footer>
   );
